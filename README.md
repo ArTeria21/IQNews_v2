@@ -1,1 +1,1 @@
-# IQNews_v2
+# IQNews
