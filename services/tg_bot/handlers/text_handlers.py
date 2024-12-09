@@ -5,7 +5,6 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from aiogram import Router, types
-from aiogram.filters import Command
 from tg_bot.texts import DONT_UNDERSTAND_TEXT
 
 router = Router()

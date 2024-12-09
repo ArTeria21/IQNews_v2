@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 import os
 
-import pika
+import aio_pika
 
 load_dotenv()
 
@@ -25,6 +25,11 @@ RABBITMQ_PORT = os.getenv('RABBITMQ_PORT')
 if not RABBITMQ_PORT:
     raise ValueError("RABBITMQ_PORT not found in environment variables")
 
-credentials = pika.PlainCredentials(RABBITMQ_USER, RABBITMQ_PASS)
-CONNECTION = pika.BlockingConnection(pika.ConnectionParameters(host=RABBITMQ_HOST, port=RABBITMQ_PORT,
-                                                            credentials=credentials))
+async def get_rabbit_connection():
+    """Устанавливает соединение с RabbitMQ"""
+    return await aio_pika.connect_robust(
+        host=RABBITMQ_HOST,
+        port=int(RABBITMQ_PORT),
+        login=RABBITMQ_USER,        # Указываем имя пользователя
+        password=RABBITMQ_PASS,     # Указываем пароль
+    )
