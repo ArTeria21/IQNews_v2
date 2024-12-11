@@ -94,3 +94,26 @@ class UserQueueManager:
                     print(f"Отправлен ответ на запрос профиля пользователя с ID {user_id}.")
             except (KeyError, json.JSONDecodeError) as e:
                 print(f"Неверный формат запроса: {e}")
+                
+    async def handle_update_preferences(self, message: IncomingMessage):
+        async with message.process():
+            try:
+                body = json.loads(message.body.decode())
+                user_id = body['user_id']
+                preferences = body['preferences']
+                await self.user_db_manager.update_user(user_id=user_id, preferences=preferences)
+                print(f"Обработано обновление интересов пользователя с ID {user_id}.")
+            except (KeyError, json.JSONDecodeError) as e:
+                print(f"Неверный формат сообщения: {e}")
+                
+    async def handle_update_keywords(self, message: IncomingMessage):
+        async with message.process():
+            try:
+                body = json.loads(message.body.decode())
+                user_id = body['user_id']
+                keywords = body['keywords']
+                await self.user_db_manager.update_user(user_id=user_id, keywords=keywords)
+                print(f"Обработано обновление ключевых слов пользователя с ID {user_id}.")
+            except (KeyError, json.JSONDecodeError) as e:
+                print(f"Неверный формат сообщения: {e}")
+                

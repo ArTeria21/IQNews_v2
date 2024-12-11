@@ -55,7 +55,6 @@ async def start_command(message: types.Message):
 async def profile_command(message: types.Message):
     """Обрабатывает команду /profile и отправляет запрос на получение профиля пользователя"""
     user_id = message.from_user.id
-    status_message = await message.answer(PROFILE_LOADING_TEXT)
     correlation_id = generate_correlation_id()
 
     connection = await get_rabbit_connection()
@@ -87,15 +86,15 @@ async def profile_command(message: types.Message):
                                 pro_status = "Вы являетесь Pro пользлвателем сервиса"
                             else:
                                 pro_status = "Вы не являетесь Pro пользлвателем сервиса"
-                            await status_message.edit_text(
+                            await message.answer(
                                 PROFILE_TEXT.format(**profile_data, pro_status=pro_status),
                                 reply_markup=get_edit_profile_keyboard()
                             )
                         else:
-                            await status_message.edit_text(PROFILE_NOT_FOUND_TEXT)
+                            await message.answer(PROFILE_NOT_FOUND_TEXT)
                         break  # Ответ получен, завершаем цикл
         except asyncio.TimeoutError:
-            await status_message.edit_text(PROFILE_LOADING_ERROR_TEXT)
+            await message.answer(PROFILE_LOADING_ERROR_TEXT)
 
 
 @router.message(Command("help"))
