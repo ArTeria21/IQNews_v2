@@ -1,4 +1,3 @@
-# main.py
 import asyncio
 from config import init_db, get_rabbit_connection
 from managers import UserQueueManager

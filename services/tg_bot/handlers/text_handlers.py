@@ -13,9 +13,12 @@ from aiogram.types import Message
 import aio_pika
 from config import get_rabbit_connection
 
-from tg_bot.texts import DONT_UNDERSTAND_TEXT, PREFERENCES_SAVED_TEXT, KEYWORDS_SAVED_TEXT
+from tg_bot.texts import (DONT_UNDERSTAND_TEXT, PREFERENCES_SAVED_TEXT, KEYWORDS_SAVED_TEXT, 
+                        INVALID_FEED_URL_TEXT, INACTIVE_FEED_TEXT, FEED_SUBSCRIBED_TEXT)
 from tg_bot.states.edit_profile import EditProfile
-from tg_bot.utils.logging import generate_correlation_id
+from tg_bot.states.subscribe_rss import SubscribeRss
+from tg_bot.utils.check_rss_link import is_feed_active, is_valid_rss_feed
+from tg_bot.utils.logging_setup import generate_correlation_id
 
 
 router = Router()
@@ -65,3 +68,25 @@ async def edit_keywords(message: types.Message, state: FSMContext):
         )
     await state.clear()
     await message.answer(KEYWORDS_SAVED_TEXT)
+
+@router.message(SubscribeRss.feed_url)
+async def subscribe_feed(message: types.Message, state: FSMContext):
+    """Обрабатывает текстовые сообщения, которые пользователь отправляет в ответном сообщении"""
+    feed_url = message.text
+    await state.clear()
+    if not await is_valid_rss_feed(feed_url):
+        await message.reply(INVALID_FEED_URL_TEXT)
+        return
+    if not await is_feed_active(feed_url):
+        await message.reply(INACTIVE_FEED_TEXT)
+        return
+    await message.reply(FEED_SUBSCRIBED_TEXT)
+    
+    connection = await get_rabbit_connection()
+    correlation_id = generate_correlation_id()
+    async with connection.channel() as channel:
+        await channel.declare_queue("user.feed.subscribe")
+        await channel.default_exchange.publish(
+            aio_pika.Message(body=json.dumps({"user_id": message.from_user.id, "feed_url": feed_url, "correlation_id": correlation_id}).encode()),
+            routing_key="user.feed.subscribe"
+        )

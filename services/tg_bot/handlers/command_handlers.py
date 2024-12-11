@@ -8,19 +8,21 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 
 from aiogram import Router, types
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
 from aio_pika import Message
 
 from tg_bot.texts import (
     START_TEXT,
     HELP_TEXT,
-    PROFILE_LOADING_TEXT,
     PROFILE_NOT_FOUND_TEXT,
     PROFILE_LOADING_ERROR_TEXT,
     PROFILE_TEXT,
     EDIT_PROFILE_TEXT,
+    SUBSCRIBE_FEED_TEXT,
 )
-from tg_bot.utils.logging import generate_correlation_id
+from tg_bot.utils.logging_setup import generate_correlation_id
 from tg_bot.keyboards.edit_profile import get_edit_profile_keyboard
+from tg_bot.states.subscribe_rss import SubscribeRss
 from config import get_rabbit_connection  # Функция для подключения к RabbitMQ
 
 router = Router()
@@ -107,3 +109,9 @@ async def edit_profile_command(message: types.Message):
     """Обрабатывает команду /edit_profile и отправляет клавиатуру для редактирования профиля"""
     await message.answer(EDIT_PROFILE_TEXT,
                         reply_markup=get_edit_profile_keyboard())
+
+@router.message(Command('subscribe_feed'))
+async def subscribe_feed_command(message: types.Message, state: FSMContext):
+    """Обрабатывает команду /subscribe_feed и запрашивает URL RSS-потока"""
+    await message.answer(SUBSCRIBE_FEED_TEXT)
+    await state.set_state(SubscribeRss.feed_url)

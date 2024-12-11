@@ -2,9 +2,7 @@ START_TEXT = 'Добро пожаловать в IQNews!\n\nМеня зовут 
 
 DONT_UNDERSTAND_TEXT = 'Прошу прощения, я не понимаю команду "{command}". Используйте команду /help для получения списка команд.'
 
-HELP_TEXT = 'Список команд:\n\n/start - Начать диалог\n/help - Получить справку по командам\n/profile - Получить профиль\n/profile_edit - Изменить профиль'
-
-PROFILE_LOADING_TEXT = 'Ваш профиль загружается...'
+HELP_TEXT = 'Список команд:\n\n/start - Начать диалог\n/help - Получить справку по командам\n/profile - Получить профиль\n/edit_profile - Изменить профиль\n/subscribe_feed - Подписаться на RSS-поток'
 
 PROFILE_TEXT = 'Ваш профиль №{user_id}\n\nUsername: {username}\n{pro_status}\n\n\
 Интересы: {preferences}\n\nКлючевые слова: {keywords}\n\n\
@@ -24,3 +22,11 @@ EDIT_KEYWORDS_TEXT = 'Пожалуйста, отправьте ответным 
 PREFERENCES_SAVED_TEXT = 'Ваши интересы успешно обновлены!'
 
 KEYWORDS_SAVED_TEXT = 'Ваши ключевые слова успешно обновлены!'
+
+SUBSCRIBE_FEED_TEXT = 'Пожалуйста, отправьте ответным сообщением URL RSS-потока, который вы хотите подписаться на. Например: "https://nplus1.ru/rss"'
+
+INVALID_FEED_URL_TEXT = 'Некорректный URL RSS-потока'
+
+INACTIVE_FEED_TEXT = 'RSS-поток не активен. Более 6 месяцев не выходили новые посты'
+
+FEED_SUBSCRIBED_TEXT = 'Вы успешно подписались на RSS-поток'
