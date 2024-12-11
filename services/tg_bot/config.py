@@ -2,6 +2,7 @@ from dotenv import load_dotenv
 import os
 
 import aio_pika
+from redis import asyncio as aioredis
 
 load_dotenv()
 
@@ -25,6 +26,10 @@ RABBITMQ_PORT = os.getenv('RABBITMQ_PORT')
 if not RABBITMQ_PORT:
     raise ValueError("RABBITMQ_PORT not found in environment variables")
 
+REDIS_URL = os.getenv('REDIS_URL')
+if not REDIS_URL:
+    raise ValueError("REDIS_URL not found in environment variables")
+
 async def get_rabbit_connection():
     """Устанавливает соединение с RabbitMQ"""
     return await aio_pika.connect_robust(
@@ -33,3 +38,5 @@ async def get_rabbit_connection():
         login=RABBITMQ_USER,        # Указываем имя пользователя
         password=RABBITMQ_PASS,     # Указываем пароль
     )
+
+redis = aioredis.from_url(REDIS_URL)

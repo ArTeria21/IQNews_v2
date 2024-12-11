@@ -1,15 +1,67 @@
 """Модуль с handlers для обработки текстовых сообщений"""
 import sys
 import os
+import json
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from aiogram import Router, types
-from tg_bot.texts import DONT_UNDERSTAND_TEXT
+from aiogram.fsm.context import FSMContext
+from aiogram.filters import BaseFilter
+from aiogram.types import Message
+
+import aio_pika
+from config import get_rabbit_connection
+
+from tg_bot.texts import DONT_UNDERSTAND_TEXT, PREFERENCES_SAVED_TEXT, KEYWORDS_SAVED_TEXT
+from tg_bot.states.edit_profile import EditProfile
+from tg_bot.utils.logging import generate_correlation_id
+
 
 router = Router()
 
-@router.message()
+class NoCommandNoStateFilter(BaseFilter):
+    async def __call__(self, message: Message, state: FSMContext) -> bool:
+        # Проверяем, что сообщение не является командой
+        if message.text and message.text.startswith("/"):
+            return False
+        # Проверяем, что нет активного состояния FSM
+        current_state = await state.get_state()
+        if current_state is not None:
+            return False
+        return True
+
+@router.message(NoCommandNoStateFilter())
 async def dont_understand_text(message: types.Message):
-    """Обрабатывает текстовые сообщения, которые не являются командами"""
+    """Обрабатывает текстовые сообщения, которые не являются командами и пользователь не находится в состоянии"""
     await message.answer(DONT_UNDERSTAND_TEXT.format(command=message.text))
+
+@router.message(EditProfile.preferences)
+async def edit_preferences(message: types.Message, state: FSMContext):
+    """Обрабатывает текстовые сообщения, которые пользователь отправляет в ответном сообщении"""
+    preferences = message.text
+    connection = await get_rabbit_connection()
+    correlation_id = generate_correlation_id()
+    async with connection.channel() as channel:
+        await channel.declare_queue("user.preferences.update")
+        await channel.default_exchange.publish(
+            aio_pika.Message(body=json.dumps({"user_id": message.from_user.id, "preferences": preferences, "correlation_id": correlation_id}).encode()),
+            routing_key="user.preferences.update"
+        )
+    await state.clear()
+    await message.answer(PREFERENCES_SAVED_TEXT)
+    
+@router.message(EditProfile.keywords)
+async def edit_keywords(message: types.Message, state: FSMContext):
+    """Обрабатывает текстовые сообщения, которые пользователь отправляет в ответном сообщении"""
+    keywords = message.text
+    connection = await get_rabbit_connection()
+    correlation_id = generate_correlation_id()
+    async with connection.channel() as channel:
+        await channel.declare_queue("user.keywords.update")
+        await channel.default_exchange.publish(
+            aio_pika.Message(body=json.dumps({"user_id": message.from_user.id, "keywords": keywords, "correlation_id": correlation_id}).encode()),
+            routing_key="user.keywords.update"
+        )
+    await state.clear()
+    await message.answer(KEYWORDS_SAVED_TEXT)

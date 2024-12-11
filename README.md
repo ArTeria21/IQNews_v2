@@ -22,3 +22,11 @@
     -p 15672:15672 \
     rabbitmq:3-management
     ```
+
+- Redis:
+    ```bash
+    docker run -d \
+    --name redis-cache \
+    -p 6379:6379 \
+    redis:latest
+    ```

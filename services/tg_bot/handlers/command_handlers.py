@@ -16,8 +16,11 @@ from tg_bot.texts import (
     PROFILE_LOADING_TEXT,
     PROFILE_NOT_FOUND_TEXT,
     PROFILE_LOADING_ERROR_TEXT,
+    PROFILE_TEXT,
+    EDIT_PROFILE_TEXT,
 )
 from tg_bot.utils.logging import generate_correlation_id
+from tg_bot.keyboards.edit_profile import get_edit_profile_keyboard
 from config import get_rabbit_connection  # Функция для подключения к RabbitMQ
 
 router = Router()
@@ -80,8 +83,13 @@ async def profile_command(message: types.Message):
                         response = json.loads(response_message.body.decode())
                         if response.get("status") == "success":
                             profile_data = response["data"]
+                            if profile_data['is_pro']:
+                                pro_status = "Вы являетесь Pro пользлвателем сервиса"
+                            else:
+                                pro_status = "Вы не являетесь Pro пользлвателем сервиса"
                             await status_message.edit_text(
-                                f"Ваш профиль:{profile_data}"
+                                PROFILE_TEXT.format(**profile_data, pro_status=pro_status),
+                                reply_markup=get_edit_profile_keyboard()
                             )
                         else:
                             await status_message.edit_text(PROFILE_NOT_FOUND_TEXT)
@@ -94,3 +102,9 @@ async def profile_command(message: types.Message):
 async def help_command(message: types.Message):
     """Обрабатывает команду /help и отправляет справку по командам"""
     await message.answer(HELP_TEXT)
+
+@router.message(Command('edit_profile'))
+async def edit_profile_command(message: types.Message):
+    """Обрабатывает команду /edit_profile и отправляет клавиатуру для редактирования профиля"""
+    await message.answer(EDIT_PROFILE_TEXT,
+                        reply_markup=get_edit_profile_keyboard())
