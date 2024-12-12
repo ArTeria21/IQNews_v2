@@ -116,4 +116,3 @@ class UserQueueManager:
                 print(f"Обработано обновление ключевых слов пользователя с ID {user_id}.")
             except (KeyError, json.JSONDecodeError) as e:
                 print(f"Неверный формат сообщения: {e}")
-                

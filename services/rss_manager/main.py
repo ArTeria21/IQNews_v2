@@ -13,12 +13,14 @@ async def main():
     
     # Объявление очередей
     feed_queue = await channel.declare_queue('rss.feed.subscribe')
+    subscriptions_queue = await channel.declare_queue('user.rss.subscriptions')
     
     # Объявление менеджеров
     feed_manager = RssFeedManager()
     
     # Подписка на очереди
     await feed_queue.consume(feed_manager.handle_add_message)
+    await subscriptions_queue.consume(feed_manager.handle_get_subscriptions)
     
     print(" [*] Ожидание сообщений. Для выхода нажмите CTRL+C")
     try:

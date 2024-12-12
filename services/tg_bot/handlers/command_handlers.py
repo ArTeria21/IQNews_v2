@@ -115,3 +115,36 @@ async def subscribe_feed_command(message: types.Message, state: FSMContext):
     """Обрабатывает команду /subscribe_feed и запрашивает URL RSS-потока"""
     await message.answer(SUBSCRIBE_FEED_TEXT)
     await state.set_state(SubscribeRss.feed_url)
+    
+@router.message(Command('my_subscriptions'))
+async def my_subscriptions_command(message: types.Message):
+    """Обрабатывает команду /my_subscriptions и отправляет список подписок пользователя"""
+    user_id = message.from_user.id
+    correlation_id = generate_correlation_id()
+
+    connection = await get_rabbit_connection()
+    async with connection:
+        channel = await connection.channel()  # Создаем канал
+        reply_queue = await channel.declare_queue(exclusive=True)  # Временная очередь для ответа
+
+        # Отправляем запрос в очередь `user.rss.subscriptions`
+        await channel.default_exchange.publish(
+            Message(
+                body=json.dumps(
+                    {"user_id": user_id, "correlation_id": correlation_id}
+                ).encode(),
+                reply_to=reply_queue.name,
+                correlation_id=correlation_id,
+            ),
+            routing_key="user.rss.subscriptions",
+        )
+        
+        try:
+            async with reply_queue.iterator() as queue_iter:
+                async for response_message in queue_iter:
+                    if response_message.correlation_id == correlation_id:
+                        response = json.loads(response_message.body.decode())
+                        await message.answer(str(response['urls']))
+                        break
+        except asyncio.TimeoutError:
+            await message.answer(PROFILE_LOADING_ERROR_TEXT)

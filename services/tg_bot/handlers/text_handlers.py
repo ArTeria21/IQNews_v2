@@ -86,7 +86,7 @@ async def subscribe_feed(message: types.Message, state: FSMContext):
     async with connection.channel() as channel:
         await channel.declare_queue("rss.feed.subscribe")
         await channel.default_exchange.publish(
-            aio_pika.Message(body=json.dumps({"feed_url": feed_url, "correlation_id": correlation_id}).encode()),
+            aio_pika.Message(body=json.dumps({"user_id": message.from_user.id, "feed_url": feed_url, "correlation_id": correlation_id}).encode()),
             routing_key="rss.feed.subscribe"
         )
     await message.reply(FEED_SUBSCRIBED_TEXT)
