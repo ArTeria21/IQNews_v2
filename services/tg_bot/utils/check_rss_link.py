@@ -55,32 +55,16 @@ async def is_valid_rss_feed(url: str, timeout: int = 5) -> bool:
                     
                     title = entry.get('title')
                     link = entry.get('link')
-                    summary = entry.get('summary', None)
-                    content_list = entry.get('content', [])
                     published = entry.get('published', None) or entry.get('updated', None)
 
-                    # Если summary пуст, попробуем извлечь контент из content_list
-                    if not summary and content_list:
-                        # content_list может быть списком словарей с ключом 'value'
-                        for c_item in content_list:
-                            if 'value' in c_item and c_item['value'].strip():
-                                summary = c_item['value']
-                                break
 
                     # Проверка обязательных полей
-                    if not (title and link and summary and published):
-                        # print(
-                        #     f"Entry {idx} is missing required fields. "
-                        #     f"title: {bool(title)}, link: {bool(link)}, "
-                        #     f"summary/content: {bool(summary)}, date: {bool(published)}"
-                        # )
+                    if not (title and link and published):
                         return False
 
                 # print("All entries passed validation.")
                 return True
-
     except Exception as e:
-        # print(f"Error while checking RSS feed {url}: {e}")
         return False
 
 async def is_feed_active(url: str, timeout: int = 5) -> bool:
