@@ -14,7 +14,8 @@ import aio_pika
 from config import get_rabbit_connection
 
 from tg_bot.texts import (DONT_UNDERSTAND_TEXT, PREFERENCES_SAVED_TEXT, KEYWORDS_SAVED_TEXT, 
-                        INVALID_FEED_URL_TEXT, INACTIVE_FEED_TEXT, FEED_SUBSCRIBED_TEXT)
+                        INVALID_FEED_URL_TEXT, INACTIVE_FEED_TEXT, FEED_SUBSCRIBED_TEXT,
+                        UNSUBSCRIBE_FEED_SUCCESS_TEXT)
 from tg_bot.states.edit_profile import EditProfile
 from tg_bot.states.subscribe_rss import SubscribeRss
 from tg_bot.utils.check_rss_link import is_feed_active, is_valid_rss_feed
@@ -90,3 +91,20 @@ async def subscribe_feed(message: types.Message, state: FSMContext):
             routing_key="rss.feed.subscribe"
         )
     await message.reply(FEED_SUBSCRIBED_TEXT)
+
+@router.message(SubscribeRss.unsubscribe_feed_url)
+async def unsubscribe_feed(message: types.Message, state: FSMContext):
+    """Обрабатывает текстовые сообщения, которые пользователь отправляет в ответном сообщении"""
+    feed_url = message.text
+    user_id = message.from_user.id
+    
+    connection = await get_rabbit_connection()
+    correlation_id = generate_correlation_id()
+    async with connection.channel() as channel:
+        await channel.declare_queue("rss.feed.unsubscribe")
+        await channel.default_exchange.publish(
+            aio_pika.Message(body=json.dumps({"user_id": user_id, "feed_url": feed_url, "correlation_id": correlation_id}).encode()),
+            routing_key="rss.feed.unsubscribe"
+        )
+    await state.clear()
+    await message.reply(UNSUBSCRIBE_FEED_SUCCESS_TEXT)

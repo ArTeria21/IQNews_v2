@@ -19,6 +19,10 @@ from tg_bot.texts import (
     PROFILE_TEXT,
     EDIT_PROFILE_TEXT,
     SUBSCRIBE_FEED_TEXT,
+    GET_SUBSCRIPTIONS_TEXT,
+    NO_SUBSCRIPTIONS_TEXT,
+    UNSUBSCRIBE_FEED_ERROR_TEXT,
+    UNSUBSCRIBE_FEED_TEXT,
 )
 from tg_bot.utils.logging_setup import generate_correlation_id
 from tg_bot.keyboards.edit_profile import get_edit_profile_keyboard
@@ -75,7 +79,6 @@ async def profile_command(message: types.Message):
             ),
             routing_key="user.profile.request",
         )
-
         # Ожидаем ответ в временной очереди
         try:
             async with reply_queue.iterator() as queue_iter:
@@ -138,13 +141,20 @@ async def my_subscriptions_command(message: types.Message):
             ),
             routing_key="user.rss.subscriptions",
         )
-        
         try:
             async with reply_queue.iterator() as queue_iter:
                 async for response_message in queue_iter:
                     if response_message.correlation_id == correlation_id:
                         response = json.loads(response_message.body.decode())
-                        await message.answer(str(response['urls']))
+                        if response['urls']:
+                            await message.answer(GET_SUBSCRIPTIONS_TEXT(response['urls']))
+                        else:
+                            await message.answer(NO_SUBSCRIPTIONS_TEXT)
                         break
         except asyncio.TimeoutError:
             await message.answer(PROFILE_LOADING_ERROR_TEXT)
+
+@router.message(Command('unsubscribe'))
+async def unsubscribe_command(message: types.Message, state: FSMContext):
+    await message.answer(UNSUBSCRIBE_FEED_TEXT)
+    await state.set_state(SubscribeRss.unsubscribe_feed_url)

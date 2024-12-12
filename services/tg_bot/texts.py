@@ -30,3 +30,15 @@ INVALID_FEED_URL_TEXT = 'Некорректный URL RSS-потока'
 INACTIVE_FEED_TEXT = 'RSS-поток не активен. Более 6 месяцев не выходили новые посты'
 
 FEED_SUBSCRIBED_TEXT = 'Вы успешно подписались на RSS-поток'
+
+def GET_SUBSCRIPTIONS_TEXT(urls: list[str]) -> str:
+    numbered_urls = [f"{i+1}. {url}" for i, url in enumerate(urls)]
+    return f"Вы подписаны на следующие RSS-потоки:\n{'\n'.join(numbered_urls)}"
+
+NO_SUBSCRIPTIONS_TEXT = 'Вы ещё не подписаны на RSS-потоки'
+
+UNSUBSCRIBE_FEED_TEXT = 'Пожалуйста, отправьте ответным сообщением URL RSS-потока, который вы хотите отписаться от. Например: "https://nplus1.ru/rss"'
+
+UNSUBSCRIBE_FEED_SUCCESS_TEXT = 'Вы успешно отписались от RSS-потока'
+
+UNSUBSCRIBE_FEED_ERROR_TEXT = 'Ошибка при отписке от RSS-потока. Возможно, вы не подписаны на него.'

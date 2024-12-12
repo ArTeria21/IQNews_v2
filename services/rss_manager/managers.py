@@ -1,5 +1,6 @@
 import json
 from sqlalchemy.future import select
+from sqlalchemy import delete, func
 from sqlalchemy.exc import NoResultFound
 from database.models import RssFeed, RssPost, Subscription
 from config import async_session_factory, get_rabbit_connection
@@ -22,7 +23,6 @@ class RssFeedManager:
             result = await session.execute(select(RssFeed).where(RssFeed.url == feed_url))
             feed = result.scalar_one_or_none()
             return feed
-
     
     async def add_subscription(self, user_id: int, feed_id: int):
         async with async_session_factory() as session:
@@ -69,3 +69,42 @@ class RssFeedManager:
             routing_key=reply_to
         )
         print(f"Отправлен ответ на запрос подписок пользователя с ID {user_id}.")
+        
+    async def get_feed_by_url(self, feed_url: str) -> RssFeed:
+        async with async_session_factory() as session:
+            result = await session.execute(select(RssFeed).where(RssFeed.url == feed_url))
+            feed = result.scalar_one_or_none()
+            return feed
+    
+    async def delete_feed(self, feed_url: str):
+        async with async_session_factory() as session:
+            await session.execute(delete(RssFeed).where(RssFeed.url == feed_url))
+            await session.commit()
+            print(f"RSS-поток {feed_url} удален.")
+            
+    async def get_amount_of_subscriptions(self, feed_url: str) -> int:
+        async with async_session_factory() as session:
+            result = await session.execute(select(func.count(Subscription.subscription_id)).where(Subscription.feed_id == feed_url))
+            amount = result.scalar_one_or_none()
+            return amount
+    
+    async def delete_subscription(self, user_id: int, feed_url: str):
+        async with async_session_factory() as session:
+            feed = await self.get_feed_by_url(feed_url)
+            subscription = await session.execute(select(Subscription).where(Subscription.user_id == user_id, Subscription.feed_id == feed.feed_id))
+            if subscription:
+                await session.execute(delete(Subscription).where(Subscription.user_id == user_id, Subscription.feed_id == feed.feed_id))
+                await session.commit()
+                print(f"Подписка на RSS-поток {feed_url} для пользователя {user_id} удалена.")
+                
+                if await self.get_amount_of_subscriptions(feed_url) == 0:
+                    await self.delete_feed(feed_url)
+            else:
+                print(f"Подписка на RSS-поток {feed_url} для пользователя {user_id} не найдена.")
+    
+    async def handle_delete_message(self, message: IncomingMessage):
+        data = json.loads(message.body.decode())
+        feed_url = data['feed_url']
+        user_id = data['user_id']
+        await self.delete_subscription(user_id, feed_url)
+        print(f"Подписка на RSS-поток {feed_url} для пользователя {user_id} удалена.")
