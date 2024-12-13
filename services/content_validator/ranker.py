@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 import json
 import asyncio
 import aio_pika
-from config import TOGETHER_AI_KEY, async_session_factory
+from config import TOGETHER_AI_KEY, async_session_factory, get_rabbit_connection
 from database.models import User
 from prompts import RANK_POSTS_PROMPT, SYSTEM_PROMPT
 from aiolimiter import AsyncLimiter
@@ -59,4 +59,16 @@ class Ranker:
                 preferences = await self.user_preferences(int(user_id))
                 keywords = await self.user_keywords(int(user_id))
                 rank = await self.rank_post(data['post_title'], preferences, keywords, data['post_content'])
-                print(rank)
+                if rank['rank'] > 60:
+                    connection = await get_rabbit_connection()
+                    channel = await connection.channel()
+                    queue = await channel.declare_queue('rss.relevant_posts')
+                    await channel.default_exchange.publish(aio_pika.Message(body=json.dumps({"feed_url": data['feed_url'], 
+                                                                        "post_title": data['post_title'], 
+                                                                        "post_link": data['post_link'], 
+                                                                        "post_content": data['post_content'], 
+                                                                        "user_id": user_id,
+                                                                        "preferences": preferences,
+                                                                        "rank": rank['rank']}).encode()),
+                                                                        routing_key='rss.relevant_posts')
+                    await connection.close()
