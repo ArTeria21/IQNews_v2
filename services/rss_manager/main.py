@@ -1,7 +1,6 @@
 import asyncio
 
 from config import init_db, get_rabbit_connection
-from database.models import RssFeed, RssPost, Subscription
 from managers import RssFeedManager
 from rss_listener import RSSListener
 
