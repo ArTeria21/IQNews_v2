@@ -1,9 +1,5 @@
 """Модуль с handlers для обработки текстовых сообщений"""
-import sys
-import os
 import json
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from aiogram import Router, types
 from aiogram.fsm.context import FSMContext
@@ -11,15 +7,15 @@ from aiogram.filters import BaseFilter
 from aiogram.types import Message
 
 import aio_pika
-from config import get_rabbit_connection
+from services.tg_bot.config import get_rabbit_connection
 
-from tg_bot.texts import (DONT_UNDERSTAND_TEXT, PREFERENCES_SAVED_TEXT, KEYWORDS_SAVED_TEXT, 
+from services.tg_bot.texts import (DONT_UNDERSTAND_TEXT, PREFERENCES_SAVED_TEXT, KEYWORDS_SAVED_TEXT, 
                         INVALID_FEED_URL_TEXT, INACTIVE_FEED_TEXT, FEED_SUBSCRIBED_TEXT,
                         UNSUBSCRIBE_FEED_SUCCESS_TEXT)
-from tg_bot.states.edit_profile import EditProfile
-from tg_bot.states.subscribe_rss import SubscribeRss
-from tg_bot.utils.check_rss_link import is_feed_active, is_valid_rss_feed
-from tg_bot.utils.logging_setup import generate_correlation_id
+from services.tg_bot.states.edit_profile import EditProfile
+from services.tg_bot.states.subscribe_rss import SubscribeRss
+from services.tg_bot.utils.check_rss_link import is_feed_active, is_valid_rss_feed
+from services.tg_bot.utils.logging_setup import generate_correlation_id
 
 
 router = Router()

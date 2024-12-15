@@ -1,7 +1,7 @@
 import asyncio
 
-from config import get_rabbit_connection
-from ai_writer import Writer
+from services.writer.config import get_rabbit_connection
+from services.writer.ai_writer import Writer
 
 async def main():
     # Установка соединения с RabbitMQ

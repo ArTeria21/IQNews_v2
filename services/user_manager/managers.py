@@ -2,8 +2,8 @@
 import json
 from sqlalchemy.future import select
 from sqlalchemy.exc import NoResultFound
-from database.models import User
-from config import async_session_factory
+from services.user_manager.database.models import User
+from services.user_manager.config import async_session_factory
 
 from aio_pika import IncomingMessage, Channel, Message
 

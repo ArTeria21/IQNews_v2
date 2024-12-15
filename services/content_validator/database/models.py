@@ -1,15 +1,10 @@
 """
 Models for the user manager service.
 """
-import os
-import sys
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, Index
 from datetime import datetime
 
-from config import Base
+from services.content_validator.config import Base
 
 
 class User(Base):

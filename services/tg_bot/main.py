@@ -2,10 +2,9 @@ import asyncio
 from aiogram import Bot, Dispatcher
 import json
 from aiogram.fsm.storage.redis import RedisStorage
-from aiohttp import web
-from config import TELEGRAM_BOT_TOKEN, redis, get_rabbit_connection
+from services.tg_bot.config import TELEGRAM_BOT_TOKEN, redis, get_rabbit_connection
 import aio_pika
-from handlers import command_router, text_router, callback_router
+from services.tg_bot.handlers import command_router, text_router, callback_router
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 storage = RedisStorage(redis=redis)

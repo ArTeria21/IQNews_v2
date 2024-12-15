@@ -4,11 +4,10 @@ from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 
 import json
-import asyncio
 import aio_pika
-from config import TOGETHER_AI_KEY, async_session_factory, get_rabbit_connection
-from database.models import User
-from prompts import RANK_POSTS_PROMPT, SYSTEM_PROMPT
+from services.content_validator.config import TOGETHER_AI_KEY, async_session_factory, get_rabbit_connection
+from services.content_validator.database.models import User
+from services.content_validator.prompts import RANK_POSTS_PROMPT, SYSTEM_PROMPT
 from aiolimiter import AsyncLimiter
 
 

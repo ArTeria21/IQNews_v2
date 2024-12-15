@@ -1,17 +1,12 @@
 """
 Models for the rss manager service.
 """
-import os
-import sys
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text, Index, ForeignKey, UUID, URL
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from uuid import uuid4
 
-from config import Base
+from services.rss_manager.config import Base
 
 class RssFeed(Base):
     """Модель RSS-потока."""

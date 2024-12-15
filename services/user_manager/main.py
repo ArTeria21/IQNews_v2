@@ -1,6 +1,6 @@
 import asyncio
-from config import init_db, get_rabbit_connection
-from managers import UserQueueManager
+from services.user_manager.config import init_db, get_rabbit_connection
+from services.user_manager.managers import UserQueueManager
 
 async def main():
     # Инициализация базы данных

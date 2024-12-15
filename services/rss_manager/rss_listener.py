@@ -3,14 +3,14 @@ import aiohttp
 import feedparser
 from datetime import datetime
 from sqlalchemy import select
-from database.models import RssFeed, RssPost, Subscription
+from services.rss_manager.database.models import RssFeed, RssPost, Subscription
 import json
 
-from config import get_rabbit_connection
+from services.rss_manager.config import get_rabbit_connection
 import aio_pika
 
-from config import async_session_factory
-from utils.web_parser import fetch_article_text
+from services.rss_manager.config import async_session_factory
+from services.rss_manager.utils.web_parser import fetch_article_text
 
 
 class RSSListener:

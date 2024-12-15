@@ -1,8 +1,8 @@
 import asyncio
 
-from config import init_db, get_rabbit_connection
-from managers import RssFeedManager
-from rss_listener import RSSListener
+from services.rss_manager.config import init_db, get_rabbit_connection
+from services.rss_manager.managers import RssFeedManager
+from services.rss_manager.rss_listener import RSSListener
 
 async def run_listener(listener: RSSListener):
     while True:

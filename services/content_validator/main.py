@@ -1,7 +1,7 @@
 import asyncio
 
-from config import init_db, get_rabbit_connection
-from ranker import Ranker
+from services.content_validator.config import init_db, get_rabbit_connection
+from services.content_validator.ranker import Ranker
 
 async def main():
     await init_db()

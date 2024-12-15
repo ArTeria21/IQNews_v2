@@ -1,17 +1,12 @@
 """Модуль с handlers для обработки нажатий на кнопку клавиатуры"""
 import json
-import asyncio
-import sys
-import os
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from aiogram import Router, types
 from aiogram import F
 from aiogram.fsm.context import FSMContext
 
-from tg_bot.texts import EDIT_PREFERENCES_TEXT, EDIT_KEYWORDS_TEXT
-from tg_bot.states.edit_profile import EditProfile
+from services.tg_bot.texts import EDIT_PREFERENCES_TEXT, EDIT_KEYWORDS_TEXT
+from services.tg_bot.states.edit_profile import EditProfile
 
 router = Router()
 

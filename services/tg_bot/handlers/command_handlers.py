@@ -1,17 +1,13 @@
 """Модуль с handlers для обработки команд"""
 import json
 import asyncio
-import sys
-import os
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aio_pika import Message
 
-from tg_bot.texts import (
+from services.tg_bot.texts import (
     START_TEXT,
     HELP_TEXT,
     PROFILE_NOT_FOUND_TEXT,
@@ -24,10 +20,10 @@ from tg_bot.texts import (
     UNSUBSCRIBE_FEED_ERROR_TEXT,
     UNSUBSCRIBE_FEED_TEXT,
 )
-from tg_bot.utils.logging_setup import generate_correlation_id
-from tg_bot.keyboards.edit_profile import get_edit_profile_keyboard
-from tg_bot.states.subscribe_rss import SubscribeRss
-from config import get_rabbit_connection  # Функция для подключения к RabbitMQ
+from services.tg_bot.utils.logging_setup import generate_correlation_id
+from services.tg_bot.keyboards.edit_profile import get_edit_profile_keyboard
+from services.tg_bot.states.subscribe_rss import SubscribeRss
+from services.tg_bot.config import get_rabbit_connection  # Функция для подключения к RabbitMQ
 
 router = Router()
 

@@ -2,8 +2,8 @@ import json
 from sqlalchemy.future import select
 from sqlalchemy import delete, func
 from sqlalchemy.exc import NoResultFound
-from database.models import RssFeed, RssPost, Subscription
-from config import async_session_factory, get_rabbit_connection
+from services.rss_manager.database.models import RssFeed, RssPost, Subscription
+from services.rss_manager.config import async_session_factory, get_rabbit_connection
 
 from aio_pika import IncomingMessage, Channel, Message
 from uuid import UUID

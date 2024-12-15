@@ -7,10 +7,10 @@ from pydantic import BaseModel, Field
 import json
 import asyncio
 import aio_pika
-from config import TOGETHER_AI_KEY, get_rabbit_connection
+from services.writer.config import TOGETHER_AI_KEY, get_rabbit_connection
 from aiolimiter import AsyncLimiter
 
-from prompts import WRITE_PROMPT, SYSTEM_PROMPT
+from services.writer.prompts import WRITE_PROMPT, SYSTEM_PROMPT
 
 class News(BaseModel):
     content: str = Field(description="Your news item prepared for the reader")
