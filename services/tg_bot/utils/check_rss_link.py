@@ -1,12 +1,14 @@
+import asyncio
+from datetime import datetime, timedelta, timezone
+
 import aiohttp
 import feedparser
-import asyncio
-from datetime import datetime, timezone, timedelta
+
 
 async def is_valid_rss_feed(url: str, timeout: int = 5) -> bool:
     """
     Проверяет корректность RSS-потока по заданному URL.
-    
+
     Критерии валидации:
     1. Успешный ответ с кодом 200.
     2. Корректный MIME тип (содержит 'xml', 'rss' или 'atom').
@@ -20,7 +22,9 @@ async def is_valid_rss_feed(url: str, timeout: int = 5) -> bool:
     """
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, allow_redirects=True, timeout=timeout) as response:
+            async with session.get(
+                url, allow_redirects=True, timeout=timeout
+            ) as response:
                 # print(f"Checking RSS feed: {url}")
                 # print(f"Response status: {response.status}")
 
@@ -30,9 +34,9 @@ async def is_valid_rss_feed(url: str, timeout: int = 5) -> bool:
                     return False
 
                 # Проверка типа содержимого
-                content_type = response.headers.get('Content-Type', '').lower()
+                content_type = response.headers.get("Content-Type", "").lower()
                 # print(f"Content type: {content_type}")
-                if not any(ct in content_type for ct in ('xml', 'rss', 'atom')):
+                if not any(ct in content_type for ct in ("xml", "rss", "atom")):
                     # print("Content type does not seem to be an RSS/Atom/XML feed.")
                     return False
 
@@ -44,7 +48,7 @@ async def is_valid_rss_feed(url: str, timeout: int = 5) -> bool:
                     # print("Feed parsing error (bozo == True).")
                     return False
 
-                entries = feed.get('entries', [])
+                entries = feed.get("entries", [])
                 if not entries:
                     # print("No entries found in the feed.")
                     return False
@@ -52,11 +56,12 @@ async def is_valid_rss_feed(url: str, timeout: int = 5) -> bool:
                 # Проверяем каждую запись
                 for idx, entry in enumerate(entries, start=1):
                     # print(f"Validating entry {idx}")
-                    
-                    title = entry.get('title')
-                    link = entry.get('link')
-                    published = entry.get('published', None) or entry.get('updated', None)
 
+                    title = entry.get("title")
+                    link = entry.get("link")
+                    published = entry.get("published", None) or entry.get(
+                        "updated", None
+                    )
 
                     # Проверка обязательных полей
                     if not (title and link and published):
@@ -64,24 +69,27 @@ async def is_valid_rss_feed(url: str, timeout: int = 5) -> bool:
 
                 # print("All entries passed validation.")
                 return True
-    except Exception as e:
+    except Exception:
         return False
+
 
 async def is_feed_active(url: str, timeout: int = 5) -> bool:
     """
     Проверяет, что последний (самый свежий) пост в RSS-потоке был опубликован
     не более 6 месяцев назад. Если да, возвращает True, иначе False.
-    
+
     Предполагается, что RSS-поток уже проверен на корректность другими функциями.
     """
     try:
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, allow_redirects=True, timeout=timeout) as response:
+            async with session.get(
+                url, allow_redirects=True, timeout=timeout
+            ) as response:
                 if response.status != 200:
                     return False
 
-                content_type = response.headers.get('Content-Type', '').lower()
-                if not any(ct in content_type for ct in ('xml', 'rss', 'atom')):
+                content_type = response.headers.get("Content-Type", "").lower()
+                if not any(ct in content_type for ct in ("xml", "rss", "atom")):
                     return False
 
                 content = await response.text()
@@ -90,7 +98,7 @@ async def is_feed_active(url: str, timeout: int = 5) -> bool:
                 if feed.bozo:
                     return False
 
-                entries = feed.get('entries', [])
+                entries = feed.get("entries", [])
                 if not entries:
                     return False
 
@@ -98,7 +106,9 @@ async def is_feed_active(url: str, timeout: int = 5) -> bool:
                 newest_date = None
                 for entry in entries:
                     # Попытка получить дату из published_parsed или updated_parsed
-                    parsed_date = entry.get('published_parsed') or entry.get('updated_parsed')
+                    parsed_date = entry.get("published_parsed") or entry.get(
+                        "updated_parsed"
+                    )
                     if parsed_date:
                         dt = datetime(*parsed_date[:6], tzinfo=timezone.utc)
                         if newest_date is None or dt > newest_date:
@@ -112,11 +122,12 @@ async def is_feed_active(url: str, timeout: int = 5) -> bool:
                 six_months_ago = datetime.now(timezone.utc) - timedelta(days=180)
                 return newest_date > six_months_ago
 
-    except Exception as e:
+    except Exception:
         # print(f"Error checking feed activity for {url}: {e}")
         return False
 
-if __name__ == '__main__':
-    url="https://deepmind.google/blog/rss.xml"
+
+if __name__ == "__main__":
+    url = "https://deepmind.google/blog/rss.xml"
     result = asyncio.run(is_feed_active(url))
     print(result)

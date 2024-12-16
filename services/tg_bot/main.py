@@ -1,12 +1,14 @@
 import asyncio
-import signal
-from aiogram import Bot, Dispatcher
 import json
-from aiogram.fsm.storage.redis import RedisStorage
-from services.tg_bot.config import TELEGRAM_BOT_TOKEN, redis, get_rabbit_connection
+import signal
+
 import aio_pika
-from services.tg_bot.handlers import command_router, text_router, callback_router
-from logger_setup import setup_logger, generate_correlation_id
+from aiogram import Bot, Dispatcher
+from aiogram.fsm.storage.redis import RedisStorage
+
+from logger_setup import generate_correlation_id, setup_logger
+from services.tg_bot.config import TELEGRAM_BOT_TOKEN, get_rabbit_connection, redis
+from services.tg_bot.handlers import callback_router, command_router, text_router
 from services.tg_bot.texts import NEWS_TEXT
 from services.tg_bot.utils.translator import translate_to_russian
 
@@ -17,11 +19,23 @@ storage = RedisStorage(redis=redis)
 
 dp = Dispatcher(storage=storage)
 
+
 async def handle_ready_posts(message: aio_pika.IncomingMessage):
     data = json.loads(message.body.decode())
-    translated_summary = translate_to_russian(data['news'])
-    logger.info(f"Получено саммари {translated_summary}... для пользователя {data['user_id']}", correlation_id=data['correlation_id'])
-    await bot.send_message(chat_id=data['user_id'], text=NEWS_TEXT.format(feed_url=data['feed_url'], post_content=translated_summary, post_link=data['post_url']))
+    translated_summary = translate_to_russian(data["news"])
+    logger.info(
+        f"Получено саммари {translated_summary}... для пользователя {data['user_id']}",
+        correlation_id=data["correlation_id"],
+    )
+    await bot.send_message(
+        chat_id=data["user_id"],
+        text=NEWS_TEXT.format(
+            feed_url=data["feed_url"],
+            post_content=translated_summary,
+            post_link=data["post_url"],
+        ),
+    )
+
 
 async def main():
     correlation_id = generate_correlation_id()
@@ -42,6 +56,7 @@ async def main():
 
     return connection  # Return connection for cleanup
 
+
 async def shutdown(dp, connection):
     correlation_id = generate_correlation_id()
     logger.info("Завершение работы бота", correlation_id=correlation_id)
@@ -55,7 +70,9 @@ async def shutdown(dp, connection):
     # Close bot session
     await bot.session.close()
 
+
 if __name__ == "__main__":
+
     async def runner():
         connection = None
         try:

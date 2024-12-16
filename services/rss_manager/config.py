@@ -1,9 +1,10 @@
 # config.py
-from dotenv import load_dotenv
 import os
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import declarative_base, sessionmaker
+
 from aio_pika import connect_robust
+from dotenv import load_dotenv
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
@@ -20,11 +21,15 @@ DATABASE_URL = f"postgresql+asyncpg://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTG
 
 engine = create_async_engine(DATABASE_URL)
 Base = declarative_base()
-async_session_factory = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+async_session_factory = sessionmaker(
+    engine, class_=AsyncSession, expire_on_commit=False
+)
+
 
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
 
 # Конфигурация RabbitMQ
 RABBITMQ_USER = os.getenv("RABBITMQ_DEFAULT_USER")
@@ -35,11 +40,12 @@ RABBITMQ_PORT = int(os.getenv("RABBITMQ_PORT", 5672))
 if not all([RABBITMQ_USER, RABBITMQ_PASS, RABBITMQ_HOST]):
     raise ValueError("Переменные окружения для RabbitMQ установлены некорректно.")
 
+
 async def get_rabbit_connection():
     """Устанавливает соединение с RabbitMQ"""
     return await connect_robust(
         host=RABBITMQ_HOST,
         port=int(RABBITMQ_PORT),
-        login=RABBITMQ_USER,        # Указываем имя пользователя
-        password=RABBITMQ_PASS,     # Указываем пароль
+        login=RABBITMQ_USER,  # Указываем имя пользователя
+        password=RABBITMQ_PASS,  # Указываем пароль
     )
