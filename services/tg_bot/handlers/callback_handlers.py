@@ -17,7 +17,6 @@ router = Router()
 @router.callback_query(F.data == "edit_preferences")
 async def edit_preferences_callback(callback: types.CallbackQuery, state: FSMContext):
     """Обработка нажатия на кнопку Изменить интересы"""
-    print("edit_preferences_callback")
     correlation_id = generate_correlation_id()
     logger.info("Обработка нажатия на кнопку Изменить интересы", correlation_id=correlation_id)
     await callback.message.answer(EDIT_PREFERENCES_TEXT)
@@ -27,7 +26,6 @@ async def edit_preferences_callback(callback: types.CallbackQuery, state: FSMCon
 @router.callback_query(F.data == "edit_keywords")
 async def edit_keywords_callback(callback: types.CallbackQuery, state: FSMContext):
     """Обработка нажатия на кнопку Изменить ключевые слова"""
-    print("edit_keywords_callback")
     correlation_id = generate_correlation_id()
     logger.info("Обработка нажатия на кнопку Изменить ключевые слова", correlation_id=correlation_id)
     await callback.message.answer(EDIT_KEYWORDS_TEXT)

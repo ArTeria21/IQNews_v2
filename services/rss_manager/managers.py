@@ -13,7 +13,7 @@ from logger_setup import setup_logger, generate_correlation_id
 logger = setup_logger(__name__)
 
 class RssFeedManager:
-    async def add_feed(self, feed_url: str) -> RssFeed:
+    async def add_feed(self, feed_url: str, correlation_id: str) -> RssFeed:
         async with async_session_factory() as session:
             result = await session.execute(select(RssFeed).where(RssFeed.url == feed_url))
             feed = result.scalar_one_or_none()
@@ -21,9 +21,9 @@ class RssFeedManager:
                 new_feed = RssFeed(url=feed_url)
                 session.add(new_feed)
                 await session.commit()
-                print(f"RSS-поток {feed_url} добавлен.")
+                logger.info(f"RSS-поток {feed_url} добавлен.", correlation_id=correlation_id)
             else:
-                print(f"RSS-поток {feed_url} уже существует.")
+                logger.info(f"RSS-поток {feed_url} уже существует.", correlation_id=correlation_id)
             
             result = await session.execute(select(RssFeed).where(RssFeed.url == feed_url))
             feed = result.scalar_one_or_none()
@@ -46,7 +46,7 @@ class RssFeedManager:
         correlation_id = data['correlation_id']
         feed_url = data['feed_url']
         logger.info(f"Получено сообщение о добавлении RSS-потока: {feed_url}", correlation_id=correlation_id)
-        feed = await self.add_feed(feed_url)
+        feed = await self.add_feed(feed_url, correlation_id)
         await self.add_subscription(data['user_id'], feed.feed_id, correlation_id)
 
     async def get_subscription_urls(self, user_id: int) -> list[str]:
@@ -101,6 +101,10 @@ class RssFeedManager:
     async def delete_subscription(self, user_id: int, feed_url: str, correlation_id: str):
         async with async_session_factory() as session:
             feed = await self.get_feed_by_url(feed_url)
+            if not feed:
+                logger.error(f"RSS-поток с URL {feed_url} не найден.", correlation_id=correlation_id)
+                return  # Выход из метода, так как поток не существует
+
             subscription = await session.execute(
                 select(Subscription).where(
                     Subscription.user_id == user_id,
@@ -118,8 +122,10 @@ class RssFeedManager:
                 logger.info(f"Подписка на RSS-поток {feed_url} для пользователя {user_id} удалена.", correlation_id=correlation_id)
             else:
                 logger.info(f"Подписка на RSS-поток {feed_url} для пользователя {user_id} не найдена.", correlation_id=correlation_id)
-        if await self.get_amount_of_subscriptions(feed.feed_id) == 0:
-            await self.delete_feed(feed_url, correlation_id)
+            
+            # Проверка, остались ли подписки на поток
+            if await self.get_amount_of_subscriptions(feed.feed_id) == 0:
+                await self.delete_feed(feed_url, correlation_id)
 
     async def handle_delete_message(self, message: IncomingMessage):
         data = json.loads(message.body.decode())

@@ -54,12 +54,18 @@ class Writer:
             logger.error(f"Ошибка при парсинге ответа от LLM", correlation_id=correlation_id)
             return
         
+        try:
+            content = news['content']
+        except KeyError:
+            logger.error(f"Ошибка при получении содержимого статьи", correlation_id=correlation_id)
+            return
+        
         connection = await get_rabbit_connection()
         channel = await connection.channel()
         await channel.declare_queue('rss.ready_posts', durable=True)
         await channel.default_exchange.publish(aio_pika.Message(body=json.dumps({
             'user_id': data['user_id'],
-            'news': news['content'],
+            'news': content,
             'post_url': data['post_link'],
             'feed_url': data['feed_url'],
             'rank': data['rank'],

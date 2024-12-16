@@ -14,7 +14,7 @@ async def main():
     channel = await connection.channel()
     
     # Объявление очередей
-    ready_posts_queue = await channel.declare_queue('rss.relevant_posts', durable=True)
+    ready_posts_queue = await channel.declare_queue('rss.relevant_posts')
     
     writer = Writer()
     # Подписка на очереди

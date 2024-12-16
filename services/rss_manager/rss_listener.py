@@ -113,7 +113,7 @@ class RSSListener:
                     new_posts.append(new_post)
                     logger.info(f"Новый пост '{new_post.title}' добавлен в базу данных", correlation_id=correlation_id)
                     await channel.default_exchange.publish(
-                        aio_pika.Message(body=json.dumps({"feed_url": feed.url, "post_title": new_post.title, "post_link": new_post.link, "post_content": new_post.content, 
+                        aio_pika.Message(body=json.dumps({"published_at": published_dt.isoformat(), "feed_url": feed.url, "post_title": new_post.title, "post_link": new_post.link, "post_content": new_post.content, 
                                                         "feed_subscribers": self.subscribers_ids[feed.url], "correlation_id": correlation_id}).encode()),
                         routing_key='rss.new_posts'
                     )

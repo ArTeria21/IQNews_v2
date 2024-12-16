@@ -4,6 +4,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 
 import json
+from datetime import datetime, timedelta
 import aio_pika
 from services.content_validator.config import TOGETHER_AI_KEY, async_session_factory, get_rabbit_connection
 from services.content_validator.database.models import User
@@ -55,6 +56,10 @@ class Ranker:
         data = json.loads(message.body.decode())
         correlation_id = data['correlation_id']
         logger.info(f"Получено новое сообщение о новом посте", correlation_id=correlation_id)
+        published_at = datetime.fromisoformat(data['published_at'])
+        if published_at < datetime.now() - timedelta(hours=3):
+            logger.info(f"Пост '{data['post_title']}' не релевантен, так как он был опубликован более 3 часов назад", correlation_id=correlation_id)
+            return
         users_id = list(data['feed_subscribers'])
         for user_id in users_id:
             # Гарантируем, что не превысим лимит запросов
@@ -63,10 +68,10 @@ class Ranker:
                 keywords = await self.user_keywords(int(user_id))
                 rank = await self.rank_post(data['post_title'], preferences, keywords, data['post_content'])
                 logger.info(f"Пост '{data['post_title']}' оценён рейтингом {rank['rank']}%", correlation_id=correlation_id)
-                if rank['rank'] > 70:
+                if rank['rank'] > 65:
                     connection = await get_rabbit_connection()
                     channel = await connection.channel()
-                    queue = await channel.declare_queue('rss.relevant_posts', durable=True)
+                    queue = await channel.declare_queue('rss.relevant_posts')
                     await channel.default_exchange.publish(aio_pika.Message(body=json.dumps({
                         "feed_url": data['feed_url'], 
                         "post_title": data['post_title'], 

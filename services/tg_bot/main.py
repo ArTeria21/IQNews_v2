@@ -7,6 +7,8 @@ from services.tg_bot.config import TELEGRAM_BOT_TOKEN, redis, get_rabbit_connect
 import aio_pika
 from services.tg_bot.handlers import command_router, text_router, callback_router
 from logger_setup import setup_logger, generate_correlation_id
+from services.tg_bot.texts import NEWS_TEXT
+from services.tg_bot.utils.translator import translate_to_russian
 
 logger = setup_logger(__name__)
 
@@ -17,8 +19,9 @@ dp = Dispatcher(storage=storage)
 
 async def handle_ready_posts(message: aio_pika.IncomingMessage):
     data = json.loads(message.body.decode())
-    logger.info(f"Получено саммари {data['news'][:100]}... для пользователя {data['user_id']}", correlation_id=data['correlation_id'])
-    await bot.send_message(chat_id=data['user_id'], text=data['news'])
+    translated_summary = translate_to_russian(data['news'])
+    logger.info(f"Получено саммари {translated_summary}... для пользователя {data['user_id']}", correlation_id=data['correlation_id'])
+    await bot.send_message(chat_id=data['user_id'], text=NEWS_TEXT.format(feed_url=data['feed_url'], post_content=translated_summary, post_link=data['post_url']))
 
 async def main():
     correlation_id = generate_correlation_id()

@@ -17,7 +17,6 @@ from services.tg_bot.texts import (
     SUBSCRIBE_FEED_TEXT,
     GET_SUBSCRIPTIONS_TEXT,
     NO_SUBSCRIPTIONS_TEXT,
-    UNSUBSCRIBE_FEED_ERROR_TEXT,
     UNSUBSCRIBE_FEED_TEXT,
 )
 from services.tg_bot.keyboards.edit_profile import get_edit_profile_keyboard
@@ -118,21 +117,21 @@ async def edit_profile_command(message: types.Message):
     await message.answer(EDIT_PROFILE_TEXT,
                         reply_markup=get_edit_profile_keyboard())
 
-@router.message(Command('subscribe_feed'))
+@router.message(Command('subscribe'))
 async def subscribe_feed_command(message: types.Message, state: FSMContext):
-    """Обрабатывает команду /subscribe_feed и запрашивает URL RSS-потока"""
+    """Обрабатывает команду /subscribe и запрашивает URL RSS-потока"""
     correlation_id = generate_correlation_id()
-    logger.info(f"Обработка команды /subscribe_feed от пользователя {message.from_user.id}", correlation_id=correlation_id)
+    logger.info(f"Обработка команды /subscribe от пользователя {message.from_user.id}", correlation_id=correlation_id)
     await message.answer(SUBSCRIBE_FEED_TEXT)
     await state.set_state(SubscribeRss.feed_url)
     await state.update_data(correlation_id=correlation_id)
 
-@router.message(Command('my_subscriptions'))
+@router.message(Command('subscriptions'))
 async def my_subscriptions_command(message: types.Message):
-    """Обрабатывает команду /my_subscriptions и отправляет список подписок пользователя"""
+    """Обрабатывает команду /subscriptions и отправляет список подписок пользователя"""
     user_id = message.from_user.id
     correlation_id = generate_correlation_id()
-    logger.info(f"Обработка команды /my_subscriptions от пользователя {message.from_user.id}", correlation_id=correlation_id)
+    logger.info(f"Обработка команды /subscriptions от пользователя {message.from_user.id}", correlation_id=correlation_id)
     connection = await get_rabbit_connection()
     async with connection:
         channel = await connection.channel()  # Создаем канал
