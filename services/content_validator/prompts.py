@@ -13,6 +13,7 @@ Here is the text that you need to analyze and evaluate:
 ```{content}```
 
 You should not give high marks to texts that do not correspond to the interests and needs of the reader!
+If you suspect that the post is an advertisement, then give it a low rating!
 Always answer in English!
 """
 

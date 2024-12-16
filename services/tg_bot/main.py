@@ -1,10 +1,14 @@
 import asyncio
+import signal
 from aiogram import Bot, Dispatcher
 import json
 from aiogram.fsm.storage.redis import RedisStorage
 from services.tg_bot.config import TELEGRAM_BOT_TOKEN, redis, get_rabbit_connection
 import aio_pika
 from services.tg_bot.handlers import command_router, text_router, callback_router
+from logger_setup import setup_logger, generate_correlation_id
+
+logger = setup_logger(__name__)
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 storage = RedisStorage(redis=redis)
@@ -13,20 +17,73 @@ dp = Dispatcher(storage=storage)
 
 async def handle_ready_posts(message: aio_pika.IncomingMessage):
     data = json.loads(message.body.decode())
+    logger.info(f"Получено саммари {data['news'][:100]}... для пользователя {data['user_id']}", correlation_id=data['correlation_id'])
     await bot.send_message(chat_id=data['user_id'], text=data['news'])
 
 async def main():
+    correlation_id = generate_correlation_id()
+    logger.info("Запуск бота", correlation_id=correlation_id)
+
+    # RabbitMQ connection
     connection = await get_rabbit_connection()
     channel = await connection.channel()
-    queue = await channel.declare_queue('rss.ready_posts')
+    queue = await channel.declare_queue("rss.ready_posts", durable=True)
+    logger.debug("Подключение к очереди rss.ready_posts", correlation_id=correlation_id)
+
+    # Consume messages
     await queue.consume(handle_ready_posts)
-    """Временная функция для запуска бота в режиме polling"""
+
+    # Include routers
     dp.include_routers(command_router, text_router, callback_router)
     await dp.start_polling(bot)
-    try:
-        await asyncio.Future()
-    finally:
-        await connection.close()
 
-if __name__ == '__main__':
-    asyncio.run(main())
+    return connection  # Return connection for cleanup
+
+async def shutdown(dp, connection):
+    correlation_id = generate_correlation_id()
+    logger.info("Завершение работы бота", correlation_id=correlation_id)
+
+    # Close aiogram dispatcher
+    await dp.storage.close()
+
+    # Close RabbitMQ connection
+    await connection.close()
+
+    # Close bot session
+    await bot.session.close()
+
+if __name__ == "__main__":
+    async def runner():
+        connection = None
+        try:
+            connection = await main()
+        except asyncio.CancelledError:
+            logger.info("Received shutdown signal, cleaning up...")
+        finally:
+            if connection:
+                await shutdown(dp, connection)
+
+    # Create and set the event loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    # Add signal handlers for graceful shutdown
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        loop.add_signal_handler(sig, loop.stop)
+
+    try:
+        loop.run_until_complete(runner())
+    except (KeyboardInterrupt, SystemExit):
+        logger.info("Bot stopped manually")
+    finally:
+        # Cancel all pending tasks
+        pending = asyncio.all_tasks(loop)
+        for task in pending:
+            task.cancel()
+            try:
+                loop.run_until_complete(task)
+            except asyncio.CancelledError:
+                pass
+
+        # Close the loop
+        loop.close()

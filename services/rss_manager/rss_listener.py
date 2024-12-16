@@ -11,7 +11,9 @@ import aio_pika
 
 from services.rss_manager.config import async_session_factory
 from services.rss_manager.utils.web_parser import fetch_article_text
+from logger_setup import setup_logger, generate_correlation_id
 
+logger = setup_logger(__name__)
 
 class RSSListener:
     def __init__(self, max_concurrent=20):
@@ -47,24 +49,28 @@ class RSSListener:
         Забирает RSS поток, парсит его и добавляет новые посты в базу данных, 
         если они новее последнего зафиксированного поста.
         """
+        correlation_id = generate_correlation_id()
         connection = await get_rabbit_connection()
         channel = await connection.channel()
-        await channel.declare_queue('rss.new_posts')
-        
+        await channel.declare_queue('rss.new_posts', durable=True)
+        logger.info(f"Проверка RSS-потока {feed.url}", correlation_id=correlation_id)
         async with self.session_factory() as session:
             # Получаем актуальный feed из БД (на случай изменения пока шёл запрос)
             db_feed = await session.get(RssFeed, feed.feed_id)
             if db_feed is None:
+                logger.info(f"RSS-поток {feed.url} не найден", correlation_id=correlation_id)
                 return  # Лента могла быть удалена
             
             try:
                 content = await self.fetch_rss_content(db_feed.url)
             except Exception as e:
                 # Можно логировать ошибку
+                logger.error(f"Ошибка при получении RSS-потока {feed.url}: {e}", correlation_id=correlation_id)
                 return
             
             parsed = feedparser.parse(content)
             if not parsed.entries:
+                logger.info(f"RSS-поток {feed.url} не содержит записей", correlation_id=correlation_id)
                 return  # Нет записей в ленте
             
             last_post_date = db_feed.last_post_date or datetime.min
@@ -80,7 +86,6 @@ class RSSListener:
                     published_dt = datetime(*entry.updated_parsed[:6])
                 
                 if published_dt is None:
-                    # Если нет даты, пропускаем, или можно установить datetime.now()
                     continue
                 
                 # Проверяем, новее ли пост
@@ -106,10 +111,10 @@ class RSSListener:
                         published_at=published_dt
                     )
                     new_posts.append(new_post)
-                    
+                    logger.info(f"Новый пост '{new_post.title}' добавлен в базу данных", correlation_id=correlation_id)
                     await channel.default_exchange.publish(
                         aio_pika.Message(body=json.dumps({"feed_url": feed.url, "post_title": new_post.title, "post_link": new_post.link, "post_content": new_post.content, 
-                                                        "feed_subscribers": self.subscribers_ids[feed.url]}).encode()),
+                                                        "feed_subscribers": self.subscribers_ids[feed.url], "correlation_id": correlation_id}).encode()),
                         routing_key='rss.new_posts'
                     )
 
@@ -121,14 +126,15 @@ class RSSListener:
                 max_date = max(post.published_at for post in new_posts)
                 db_feed.last_post_date = max_date
                 await session.commit()
-
+                logger.info(f"RSS-поток {feed.url} обновлён", correlation_id=correlation_id)
+                
     async def check_feeds(self):
         """
         Проверяет все RssFeed в базе данных, асинхронно обновляет их.
         """
         async with self.session_factory() as session:
             feeds = (await session.execute(select(RssFeed))).scalars().all()
-        
+
         # Запускаем таски для всех лент
         tasks = [asyncio.create_task(self.fetch_and_update_feed(feed)) for feed in feeds]
         await asyncio.gather(*tasks)

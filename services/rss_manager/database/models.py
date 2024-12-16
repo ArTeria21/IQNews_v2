@@ -15,8 +15,9 @@ class RssFeed(Base):
     url = Column(String(255), nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     last_post_date = Column(DateTime, nullable=True)
-    posts = relationship('RssPost', back_populates='feed')
-    subscriptions = relationship('Subscription', back_populates='feed')
+    posts = relationship('RssPost', back_populates='feed', cascade='all, delete-orphan')
+    subscriptions = relationship('Subscription', back_populates='feed', cascade='all, delete-orphan', 
+                            passive_deletes=True)
 
     def __repr__(self):
         return f'<RssFeed {self.url}:{self.feed_id}>'
@@ -33,7 +34,7 @@ class RssPost(Base):
     """Модель RSS-поста."""
     __tablename__ = 'rss_posts'
     post_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    feed_id = Column(UUID(as_uuid=True), ForeignKey('rss_feeds.feed_id'))
+    feed_id = Column(UUID(as_uuid=True), ForeignKey('rss_feeds.feed_id', ondelete='CASCADE'))
     title = Column(Text, nullable=False)
     content = Column(Text, nullable=True)
     link = Column(String(255), nullable=False)
@@ -59,7 +60,7 @@ class Subscription(Base):
     subscription_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     user_id = Column(Integer, nullable=False)
     created_at = Column(DateTime, nullable=False, default=datetime.now)
-    feed_id = Column(UUID(as_uuid=True), ForeignKey('rss_feeds.feed_id'))
+    feed_id = Column(UUID(as_uuid=True), ForeignKey('rss_feeds.feed_id', ondelete='CASCADE'))
     feed = relationship('RssFeed', back_populates='subscriptions')
     
     def __repr__(self):

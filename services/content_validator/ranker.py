@@ -9,7 +9,9 @@ from services.content_validator.config import TOGETHER_AI_KEY, async_session_fac
 from services.content_validator.database.models import User
 from services.content_validator.prompts import RANK_POSTS_PROMPT, SYSTEM_PROMPT
 from aiolimiter import AsyncLimiter
+from logger_setup import setup_logger, generate_correlation_id
 
+logger = setup_logger(__name__)
 
 class Evaluation(BaseModel):
     explaination: str = Field(description="Briefly (50-80 words) analyze this text and tell us whether it corresponds to the user's interests or not.")
@@ -51,6 +53,8 @@ class Ranker:
 
     async def handle_new_posts(self, message: aio_pika.IncomingMessage):
         data = json.loads(message.body.decode())
+        correlation_id = data['correlation_id']
+        logger.info(f"Получено новое сообщение о новом посте", correlation_id=correlation_id)
         users_id = list(data['feed_subscribers'])
         for user_id in users_id:
             # Гарантируем, что не превысим лимит запросов
@@ -58,16 +62,21 @@ class Ranker:
                 preferences = await self.user_preferences(int(user_id))
                 keywords = await self.user_keywords(int(user_id))
                 rank = await self.rank_post(data['post_title'], preferences, keywords, data['post_content'])
-                if rank['rank'] > 60:
+                logger.info(f"Пост '{data['post_title']}' оценён рейтингом {rank['rank']}%", correlation_id=correlation_id)
+                if rank['rank'] > 70:
                     connection = await get_rabbit_connection()
                     channel = await connection.channel()
-                    queue = await channel.declare_queue('rss.relevant_posts')
-                    await channel.default_exchange.publish(aio_pika.Message(body=json.dumps({"feed_url": data['feed_url'], 
-                                                                        "post_title": data['post_title'], 
-                                                                        "post_link": data['post_link'], 
-                                                                        "post_content": data['post_content'], 
-                                                                        "user_id": user_id,
-                                                                        "preferences": preferences,
-                                                                        "rank": rank['rank']}).encode()),
-                                                                        routing_key='rss.relevant_posts')
+                    queue = await channel.declare_queue('rss.relevant_posts', durable=True)
+                    await channel.default_exchange.publish(aio_pika.Message(body=json.dumps({
+                        "feed_url": data['feed_url'], 
+                        "post_title": data['post_title'], 
+                        "post_link": data['post_link'], 
+                        "post_content": data['post_content'], 
+                        "user_id": user_id,
+                        "preferences": preferences,
+                        "rank": rank['rank'],
+                        "correlation_id": correlation_id
+                        }).encode()),
+                        routing_key='rss.relevant_posts')
                     await connection.close()
+                    logger.info(f"Пост '{data['post_title']}' отправлен в очередь релевантных постов для пользователя {user_id}", correlation_id=correlation_id)

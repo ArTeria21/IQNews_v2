@@ -8,6 +8,10 @@ from services.rss_manager.config import async_session_factory, get_rabbit_connec
 from aio_pika import IncomingMessage, Channel, Message
 from uuid import UUID
 
+from logger_setup import setup_logger, generate_correlation_id
+
+logger = setup_logger(__name__)
+
 class RssFeedManager:
     async def add_feed(self, feed_url: str) -> RssFeed:
         async with async_session_factory() as session:
@@ -25,7 +29,7 @@ class RssFeedManager:
             feed = result.scalar_one_or_none()
             return feed
 
-    async def add_subscription(self, user_id: int, feed_id: int):
+    async def add_subscription(self, user_id: int, feed_id: int, correlation_id: str):
         async with async_session_factory() as session:
             result = await session.execute(select(Subscription).where(Subscription.user_id == user_id, Subscription.feed_id == feed_id))
             subscription = result.scalar_one_or_none()
@@ -33,16 +37,17 @@ class RssFeedManager:
                 new_subscription = Subscription(user_id=user_id, feed_id=feed_id)
                 session.add(new_subscription)
                 await session.commit()
-                print(f"Подписка на RSS-поток {feed_id} для пользователя {user_id} добавлена.")
+                logger.info(f"Подписка на RSS-поток {feed_id} для пользователя {user_id} добавлена.", correlation_id=correlation_id)
             else:
-                print(f"Подписка на RSS-поток {feed_id} для пользователя {user_id} уже существует.")
+                logger.info(f"Подписка на RSS-поток {feed_id} для пользователя {user_id} уже существует.", correlation_id=correlation_id)
 
     async def handle_add_message(self, message: IncomingMessage):
         data = json.loads(message.body.decode())
+        correlation_id = data['correlation_id']
         feed_url = data['feed_url']
-        print(f"Получено сообщение о добавлении RSS-потока: {feed_url}")
+        logger.info(f"Получено сообщение о добавлении RSS-потока: {feed_url}", correlation_id=correlation_id)
         feed = await self.add_feed(feed_url)
-        await self.add_subscription(data['user_id'], feed.feed_id)
+        await self.add_subscription(data['user_id'], feed.feed_id, correlation_id)
 
     async def get_subscription_urls(self, user_id: int) -> list[str]:
         async with async_session_factory() as session:
@@ -64,12 +69,13 @@ class RssFeedManager:
         reply_to = message.reply_to
         correlation_id = message.correlation_id
         
+        logger.info(f"Получен запрос на получение списка подписок для пользователя {user_id}", correlation_id=correlation_id)
         await channel.default_exchange.publish(
             Message(body=json.dumps({"urls": urls}).encode(), 
             correlation_id=correlation_id),
             routing_key=reply_to
         )
-        print(f"Отправлен ответ на запрос подписок пользователя с ID {user_id}.")
+        logger.info(f"Отправлен ответ на запрос подписок пользователя с ID {user_id}.", correlation_id=correlation_id)
 
     async def get_feed_by_url(self, feed_url: str) -> RssFeed:
         async with async_session_factory() as session:
@@ -77,11 +83,11 @@ class RssFeedManager:
             feed = result.scalar_one_or_none()
             return feed
 
-    async def delete_feed(self, feed_url: str):
+    async def delete_feed(self, feed_url: str, correlation_id: str):
         async with async_session_factory() as session:
             await session.execute(delete(RssFeed).where(RssFeed.url == feed_url))
             await session.commit()
-            print(f"RSS-поток {feed_url} удален.")
+            logger.info(f"RSS-поток {feed_url} удален.", correlation_id=correlation_id)
 
     async def get_amount_of_subscriptions(self, feed_id: UUID) -> int:
         async with async_session_factory() as session:
@@ -92,7 +98,7 @@ class RssFeedManager:
             amount = result.scalar_one_or_none()
             return amount
 
-    async def delete_subscription(self, user_id: int, feed_url: str):
+    async def delete_subscription(self, user_id: int, feed_url: str, correlation_id: str):
         async with async_session_factory() as session:
             feed = await self.get_feed_by_url(feed_url)
             subscription = await session.execute(
@@ -109,15 +115,16 @@ class RssFeedManager:
                     )
                 )
                 await session.commit()
-                print(f"Подписка на RSS-поток {feed_url} для пользователя {user_id} удалена.")
+                logger.info(f"Подписка на RSS-поток {feed_url} для пользователя {user_id} удалена.", correlation_id=correlation_id)
             else:
-                print(f"Подписка на RSS-поток {feed_url} для пользователя {user_id} не найдена.")
+                logger.info(f"Подписка на RSS-поток {feed_url} для пользователя {user_id} не найдена.", correlation_id=correlation_id)
         if await self.get_amount_of_subscriptions(feed.feed_id) == 0:
-            await self.delete_feed(feed_url)
+            await self.delete_feed(feed_url, correlation_id)
 
     async def handle_delete_message(self, message: IncomingMessage):
         data = json.loads(message.body.decode())
         feed_url = data['feed_url']
         user_id = data['user_id']
-        await self.delete_subscription(user_id, feed_url)
-        print(f"Подписка на RSS-поток {feed_url} для пользователя {user_id} удалена.")
+        correlation_id = data['correlation_id']
+        await self.delete_subscription(user_id, feed_url, correlation_id)
+        logger.info(f"Подписка на RSS-поток {feed_url} для пользователя {user_id} удалена.", correlation_id=correlation_id)
