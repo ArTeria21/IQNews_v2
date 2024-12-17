@@ -5,7 +5,8 @@ from aiogram.fsm.context import FSMContext
 
 from logger_setup import generate_correlation_id, setup_logger
 from services.tg_bot.states.edit_profile import EditProfile
-from services.tg_bot.texts import EDIT_ANTYPATHY_TEXT, EDIT_PREFERENCES_TEXT
+from services.tg_bot.texts import EDIT_ANTYPATHY_TEXT, EDIT_PREFERENCES_TEXT, HOW_TO_BECOME_PRO_TEXT
+from services.tg_bot.config import ADMIN_USERNAME
 
 logger = setup_logger(__name__)
 
@@ -35,3 +36,8 @@ async def edit_antipathy_callback(callback: types.CallbackQuery, state: FSMConte
     await callback.message.answer(EDIT_ANTYPATHY_TEXT)
     await state.set_state(EditProfile.antipathy)
     await state.update_data(correlation_id=correlation_id)
+
+@router.callback_query(F.data == "How_to_become_pro")
+async def how_to_become_pro_callback(callback: types.CallbackQuery):
+    """Обработка нажатия на кнопку Как стать PRO? 😎"""
+    await callback.message.answer(HOW_TO_BECOME_PRO_TEXT.format(admin_contact=ADMIN_USERNAME))

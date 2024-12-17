@@ -9,6 +9,9 @@ def get_edit_profile_keyboard():
                 InlineKeyboardButton(
                     text="Антипатии", callback_data="edit_antipathy"
                 ),
+            ],
+            [
+                InlineKeyboardButton(text="Как стать PRO? 😎", callback_data="How_to_become_pro"),
             ]
         ]
     )

@@ -8,7 +8,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 
 from logger_setup import generate_correlation_id, setup_logger
 from services.tg_bot.config import TELEGRAM_BOT_TOKEN, get_rabbit_connection, redis
-from services.tg_bot.handlers import callback_router, command_router, text_router
+from services.tg_bot.handlers import callback_router, command_router, text_router, admin_panel_router
 from services.tg_bot.texts import GET_NEWS_TEXT
 from services.tg_bot.utils.translator import translate_to_russian
 
@@ -79,6 +79,14 @@ async def handle_ready_posts(message: aio_pika.IncomingMessage):
 
     # Enqueue the message for the user
     await enqueue_message(user_id, news_text, correlation_id)
+    
+async def handle_status_notification(message: aio_pika.IncomingMessage):
+    data = json.loads(message.body.decode())
+    user_id = data["user_id"]
+    status = data["status"]
+    correlation_id = data["correlation_id"]
+    logger.info(f"Пользователь {user_id} получил уведомление о смене статуса на {status}", correlation_id=correlation_id)
+    await bot.send_message(chat_id=user_id, text=f"Ваш статус был изменён на {status}")
 
 async def main():
     correlation_id = generate_correlation_id()
@@ -88,13 +96,15 @@ async def main():
     connection = await get_rabbit_connection()
     channel = await connection.channel()
     queue = await channel.declare_queue("rss.ready_posts", durable=True)
+    status_notification_queue = await channel.declare_queue("user.status.notification", durable=True)
     logger.debug("Подключение к очереди rss.ready_posts", correlation_id=correlation_id)
 
     # Start consuming messages from the queue
     await queue.consume(handle_ready_posts, no_ack=True)
-
+    await status_notification_queue.consume(handle_status_notification)
+    
     # Include all routers
-    dp.include_routers(command_router, text_router, callback_router)
+    dp.include_routers(command_router, text_router, callback_router, admin_panel_router)
     await dp.start_polling(bot)
 
     return connection  # Return connection for cleanup

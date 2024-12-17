@@ -40,6 +40,15 @@ class UserDBManager:
         else:
             result = await session.execute(select(User).where(User.user_id == user_id))
             return result.scalar_one_or_none()
+    
+    async def get_user_id_by_username(self, username: str, session=None):
+        if session is None:
+            async with async_session_factory() as session:
+                result = await session.execute(select(User).where(User.username == username))
+                return result.scalar_one_or_none()
+        else:
+            result = await session.execute(select(User).where(User.username == username))
+            return result.scalar_one_or_none()
 
     async def update_user(self, user_id: int, correlation_id: str, **kwargs):
         async with async_session_factory() as session:
@@ -193,3 +202,48 @@ class UserQueueManager:
                 logger.info(f"Отправлен ответ на запрос проверки статуса пользователя с ID {user_id}.", correlation_id=correlation_id)
             except (KeyError, json.JSONDecodeError) as e:
                 logger.error(f"Неверный формат запроса: {e}", correlation_id=correlation_id)
+    
+    async def send_notification(self, user_id: int, status: str, correlation_id: str):
+        queue = await self.channel.declare_queue("user.status.notification", durable=True)
+        await self.channel.default_exchange.publish(
+            Message(body=json.dumps({"user_id": user_id, "status": status, "correlation_id": correlation_id}).encode()),
+            routing_key=queue.name,
+        )
+    
+    async def handle_set_status_id(self, message: IncomingMessage):
+        async with message.process():
+            try:
+                body = json.loads(message.body.decode())
+                user_id = body["user_id"]
+                status = body["status"]
+                user = await self.user_db_manager.get_user(user_id)
+                if not user:
+                    logger.error(f"Пользователь с ID {user_id} не найден", correlation_id=body["correlation_id"])
+                if status == "pro":
+                    await self.user_db_manager.update_user(user_id=user_id, is_pro=True, correlation_id=body["correlation_id"])
+                elif status == "free":
+                    await self.user_db_manager.update_user(user_id=user_id, is_pro=False, correlation_id=body["correlation_id"])
+                logger.info(f"Обработано установление статуса пользователя с ID {user_id} в {status}", correlation_id=body["correlation_id"])
+                await self.send_notification(user_id=user_id, status=status, correlation_id=body["correlation_id"])
+            except (KeyError, json.JSONDecodeError) as e:
+                logger.error(f"Неверный формат запроса: {e}", correlation_id=body["correlation_id"])
+            
+    async def handle_set_status_username(self, message: IncomingMessage):
+        async with message.process():
+            try:
+                body = json.loads(message.body.decode())
+                username = body["user_id"]
+                status = body["status"]
+                user = await self.user_db_manager.get_user_id_by_username(username)
+                if not user:
+                    logger.error(f"Пользователь с username {username} не найден", correlation_id=body["correlation_id"])
+                    return
+                user_id = user.user_id
+                if status == "pro":
+                    await self.user_db_manager.update_user(user_id=user_id, is_pro=True, correlation_id=body["correlation_id"])
+                elif status == "free":
+                    await self.user_db_manager.update_user(user_id=user_id, is_pro=False, correlation_id=body["correlation_id"])
+                logger.info(f"Обработано установление статуса пользователя с username {username} в {status}", correlation_id=body["correlation_id"])
+                await self.send_notification(user_id=user_id, status=status, correlation_id=body["correlation_id"])
+            except (KeyError, json.JSONDecodeError) as e:
+                logger.error(f"Неверный формат запроса: {e}", correlation_id=body["correlation_id"])

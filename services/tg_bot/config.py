@@ -42,3 +42,11 @@ async def get_rabbit_connection():
 
 
 redis = aioredis.from_url(REDIS_URL)
+
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+if not ADMIN_PASSWORD:
+    raise ValueError("ADMIN_PASSWORD not found in environment variables")
+
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
+if not ADMIN_USERNAME:
+    raise ValueError("ADMIN_USERNAME not found in environment variables")

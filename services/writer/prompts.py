@@ -11,7 +11,7 @@ Also, you should write the news in the following JSON format:
 Here is the text that you need to analyze and write in the JSON format:
 ```{content}```
 
-NEVER ADD ANYTHING TO THE TEXT THAT IS NOT COVERED IN THE NEWS! Your text should be no longer than 150 words. Please, use emojis to make it more engaging, but do not use them too much. Your text should be calm and not too emotional.
+NEVER ADD ANYTHING TO THE TEXT THAT IS NOT COVERED IN THE NEWS! Your text should be no longer than 150 words. Please, use emojis to make it more engaging, but do not use them too much. Your text should be calm and not too emotional. Don't add a greeting to the text!
 Always answer in English!
 """
 

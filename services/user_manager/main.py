@@ -24,6 +24,8 @@ async def main():
         "user.preferences.update", durable=True
     )
     antipathy_queue = await channel.declare_queue("user.antipathy.update", durable=True)
+    set_status_id_queue = await channel.declare_queue("user.set_status.id", durable=True)
+    set_status_username_queue = await channel.declare_queue("user.set_status.username", durable=True)
 
     # Инициализация менеджера очередей
     user_queue_manager = UserQueueManager(channel)
@@ -33,6 +35,8 @@ async def main():
     await get_queue.consume(user_queue_manager.handle_get_user)
     await preferences_queue.consume(user_queue_manager.handle_update_preferences)
     await antipathy_queue.consume(user_queue_manager.handle_update_antipathy)
+    await set_status_id_queue.consume(user_queue_manager.handle_set_status_id)
+    await set_status_username_queue.consume(user_queue_manager.handle_set_status_username)
 
     try:
         # Бесконечный цикл для поддержания работы приложения
