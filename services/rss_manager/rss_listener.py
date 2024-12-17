@@ -16,7 +16,7 @@ logger = setup_logger(__name__)
 
 
 class RSSListener:
-    def __init__(self, max_concurrent=20):
+    def __init__(self, max_concurrent=5):
         """
         :param session_factory: фабрика асинхронных сессий (async_sessionmaker)
         :param max_concurrent: максимальное число одновременных запросов к RSS

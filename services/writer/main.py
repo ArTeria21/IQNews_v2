@@ -19,7 +19,7 @@ async def main():
 
     writer = Writer()
     # Подписка на очереди
-    await ready_posts_queue.consume(writer.handle_new_posts)
+    await ready_posts_queue.consume(writer.handle_new_posts, no_ack=True)
 
     try:
         await asyncio.Future()

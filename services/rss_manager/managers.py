@@ -70,6 +70,7 @@ class RssFeedManager:
         )
         feed = await self.add_feed(feed_url, correlation_id)
         await self.add_subscription(data["user_id"], feed.feed_id, correlation_id)
+        await message.ack()
 
     async def get_subscription_urls(self, user_id: int) -> list[str]:
         async with async_session_factory() as session:
@@ -105,6 +106,7 @@ class RssFeedManager:
             f"Отправлен ответ на запрос подписок пользователя с ID {user_id}.",
             correlation_id=correlation_id,
         )
+        await message.ack()
 
     async def get_feed_by_url(self, feed_url: str) -> RssFeed:
         async with async_session_factory() as session:
@@ -180,3 +182,4 @@ class RssFeedManager:
             f"Подписка на RSS-поток {feed_url} для пользователя {user_id} удалена.",
             correlation_id=correlation_id,
         )
+        await message.ack()

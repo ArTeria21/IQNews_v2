@@ -48,4 +48,13 @@ UNSUBSCRIBE_FEED_SUCCESS_TEXT = "Готово! Вы больше не подпи
 
 UNSUBSCRIBE_FEED_ERROR_TEXT = "Не получилось отписаться. Возможно, вы не подписаны на этот поток? Давайте проверим это с помощью команды /my_subscriptions."
 
-NEWS_TEXT = "Новый пост в канале {feed_url}! 💫\n\nВот о чём он:\n{post_content}\n\nЧитать подробнее: {post_link}"
+def GET_NEWS_TEXT(feed_url: str, post_content: str, post_link: str) -> str:
+    try:
+        feed_slug = f"#{feed_url.split('/')[2].split('.')[0]}"
+    except Exception as e:
+        feed_slug = None
+    
+    if feed_slug:
+        return f"Новый пост в канале {feed_url}! 💫\n\nВот о чём он:\n{post_content}\n\nЧитать подробнее: {post_link}\n\nДругие посты из этого канала можешь найти по хештегу {feed_slug}"
+    else:
+        return f"Новый пост в канале {feed_url}! 💫\n\nВот о чём он:\n{post_content}\n\nЧитать подробнее: {post_link}"

@@ -14,7 +14,7 @@ async def run_listener(listener: RSSListener):
     while True:
         await listener.check_feeds()
         logger.info("Проверка RSS-каналов", correlation_id=correlation_id)
-        await asyncio.sleep(60)
+        await asyncio.sleep(60 * 3)
 
 
 async def main():
@@ -34,6 +34,7 @@ async def main():
     # Объявление менеджеров
     feed_manager = RssFeedManager()
     listener = RSSListener()
+
     # Подписка на очереди
     await feed_queue.consume(feed_manager.handle_add_message)
     await subscriptions_queue.consume(feed_manager.handle_get_subscriptions)

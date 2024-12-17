@@ -20,7 +20,7 @@ async def main():
 
     ranker = Ranker()
     # Подписка на очереди
-    await new_posts_queue.consume(ranker.handle_new_posts)
+    await new_posts_queue.consume(ranker.handle_new_posts, no_ack=True)
 
     try:
         # Бесконечный цикл для поддержания работы приложения

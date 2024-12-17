@@ -86,7 +86,6 @@ class Ranker:
                 f"Пост '{data['post_title']}' не релевантен, так как он был опубликован более 3 часов назад",
                 correlation_id=correlation_id,
             )
-            await message.ack()
             return
             
         users_id = list(data["feed_subscribers"])
