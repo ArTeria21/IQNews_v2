@@ -25,12 +25,74 @@ from services.tg_bot.texts import (
     START_TEXT,
     SUBSCRIBE_FEED_TEXT,
     UNSUBSCRIBE_FEED_TEXT,
+    SUBSCRIPTIONS_LIMIT_TEXT,
 )
 
 logger = setup_logger(__name__)
 
 router = Router()
 
+async def get_user_subscriptions(user_id: int, correlation_id: str) -> list[str]:
+    """Получает список подписок пользователя из RabbitMQ"""
+    connection = await get_rabbit_connection()
+    async with connection:
+        channel = await connection.channel()
+        reply_queue = await channel.declare_queue(exclusive=True)
+
+        await channel.default_exchange.publish(
+            Message(
+                body=json.dumps({"user_id": user_id, "correlation_id": correlation_id}).encode(),
+                reply_to=reply_queue.name,
+                correlation_id=correlation_id,
+            ),
+            routing_key="user.rss.subscriptions",
+        )
+        try:
+            async with reply_queue.iterator() as queue_iter:
+                async for response_message in queue_iter:
+                    if response_message.correlation_id == correlation_id:
+                        response = json.loads(response_message.body.decode())
+                        return response["urls"]
+        except asyncio.TimeoutError:
+            return []
+        except Exception as e:
+            logger.error(f"Ошибка при получении подписок пользователя {user_id}: {e}", correlation_id=correlation_id)
+            return []
+
+async def get_user_profile(user_id: int, correlation_id: str) -> dict:
+    """Получает информацию о профиле пользователя через RabbitMQ"""
+    connection = await get_rabbit_connection()
+    async with connection:
+        channel = await connection.channel()
+        reply_queue = await channel.declare_queue(exclusive=True)
+
+        # Отправляем запрос в очередь `user.profile.request`
+        await channel.default_exchange.publish(
+            Message(
+                body=json.dumps(
+                    {"user_id": user_id, "correlation_id": correlation_id}
+                ).encode(),
+                reply_to=reply_queue.name,
+                correlation_id=correlation_id,
+            ),
+            routing_key="user.profile.request",
+        )
+
+        try:
+            async with reply_queue.iterator() as queue_iter:
+                async for response_message in queue_iter:
+                    if response_message.correlation_id == correlation_id:
+                        response = json.loads(response_message.body.decode())
+                        return response
+        except asyncio.TimeoutError:
+            logger.error(
+                f"Таймаут при получении профиля пользователя {user_id}",
+                correlation_id=correlation_id,
+            )
+            return {"status": "error", "message": "timeout"}
+        except Exception as e:
+            logger.error(f"Ошибка при получении профиля пользователя {user_id}: {e}", correlation_id=correlation_id)
+            return {"status": "error", "message": "unknown_error"}
 
 @router.message(Command("start"))
 async def start_command(message: types.Message):
@@ -60,7 +122,6 @@ async def start_command(message: types.Message):
             routing_key="user.create",  # Очередь создания пользователя
         )
 
-
 @router.message(Command("profile"))
 async def profile_command(message: types.Message):
     """Обрабатывает команду /profile и отправляет запрос на получение профиля пользователя"""
@@ -70,57 +131,32 @@ async def profile_command(message: types.Message):
         f"Обработка команды /profile от пользователя {message.from_user.id}",
         correlation_id=correlation_id,
     )
-    connection = await get_rabbit_connection()
-    async with connection:
-        channel = await connection.channel()  # Создаем канал
-        reply_queue = await channel.declare_queue(
-            exclusive=True
-        )  # Временная очередь для ответа
 
-        # Отправляем запрос в очередь `user.profile.request`
-        await channel.default_exchange.publish(
-            Message(
-                body=json.dumps(
-                    {"user_id": user_id, "correlation_id": correlation_id}
-                ).encode(),
-                reply_to=reply_queue.name,
-                correlation_id=correlation_id,
+    response = await get_user_profile(user_id, correlation_id)
+    
+    if response.get("status") == "success":
+        profile_data = response["data"]
+        if profile_data["is_pro"]:
+            pro_status = "Вы являетесь Pro пользлвателем сервиса"
+        else:
+            pro_status = "Вы не являетесь Pro пользлвателем сервиса"
+        await message.answer(
+            PROFILE_TEXT.format(
+                **profile_data, pro_status=pro_status
             ),
-            routing_key="user.profile.request",
+            reply_markup=get_edit_profile_keyboard(),
         )
-        # Ожидаем ответ в временной очереди
-        try:
-            async with reply_queue.iterator() as queue_iter:
-                async for response_message in queue_iter:
-                    if response_message.correlation_id == correlation_id:
-                        response = json.loads(response_message.body.decode())
-                        if response.get("status") == "success":
-                            profile_data = response["data"]
-                            if profile_data["is_pro"]:
-                                pro_status = "Вы являетесь Pro пользлвателем сервиса"
-                            else:
-                                pro_status = "Вы не являетесь Pro пользлвателем сервиса"
-                            await message.answer(
-                                PROFILE_TEXT.format(
-                                    **profile_data, pro_status=pro_status
-                                ),
-                                reply_markup=get_edit_profile_keyboard(),
-                            )
-                            logger.info(
-                                f"Отправлено сообщение с профилем пользователя {message.from_user.id}",
-                                correlation_id=correlation_id,
-                            )
-                        else:
-                            await message.answer(PROFILE_NOT_FOUND_TEXT)
-                            logger.warning(
-                                f"Профиль пользователя {message.from_user.id} не найден",
-                                correlation_id=correlation_id,
-                            )
-                        break  # Ответ получен, завершаем цикл
-        except asyncio.TimeoutError:
+        logger.info(
+            f"Отправлено сообщение с профилем пользователя {message.from_user.id}",
+            correlation_id=correlation_id,
+        )
+    else:
+        if response.get("message") == "timeout":
             await message.answer(PROFILE_LOADING_ERROR_TEXT)
-            logger.error(
-                f"Ошибка при получении профиля пользователя {message.from_user.id}",
+        else:
+            await message.answer(PROFILE_NOT_FOUND_TEXT)
+            logger.warning(
+                f"Профиль пользователя {message.from_user.id} не найден",
                 correlation_id=correlation_id,
             )
 
@@ -135,7 +171,6 @@ async def help_command(message: types.Message):
         correlation_id=correlation_id,
     )
 
-
 @router.message(Command("edit_profile"))
 async def edit_profile_command(message: types.Message):
     """Обрабатывает команду /edit_profile и отправляет клавиатуру для редактирования профиля"""
@@ -146,7 +181,6 @@ async def edit_profile_command(message: types.Message):
     )
     await message.answer(EDIT_PROFILE_TEXT, reply_markup=get_edit_profile_keyboard())
 
-
 @router.message(Command("subscribe"))
 async def subscribe_feed_command(message: types.Message, state: FSMContext):
     """Обрабатывает команду /subscribe и запрашивает URL RSS-потока"""
@@ -155,10 +189,15 @@ async def subscribe_feed_command(message: types.Message, state: FSMContext):
         f"Обработка команды /subscribe от пользователя {message.from_user.id}",
         correlation_id=correlation_id,
     )
+    user_profile = await get_user_profile(message.from_user.id, correlation_id)
+    is_pro = bool(user_profile['data']['is_pro'])
+    current_subscriptions = await get_user_subscriptions(message.from_user.id, correlation_id)
+    if not is_pro and len(current_subscriptions) >= 3:
+        await message.answer(SUBSCRIPTIONS_LIMIT_TEXT)
+        return
     await message.answer(SUBSCRIBE_FEED_TEXT)
     await state.set_state(SubscribeRss.feed_url)
     await state.update_data(correlation_id=correlation_id)
-
 
 @router.message(Command("subscriptions"))
 async def my_subscriptions_command(message: types.Message):
@@ -169,51 +208,11 @@ async def my_subscriptions_command(message: types.Message):
         f"Обработка команды /subscriptions от пользователя {message.from_user.id}",
         correlation_id=correlation_id,
     )
-    connection = await get_rabbit_connection()
-    async with connection:
-        channel = await connection.channel()  # Создаем канал
-        reply_queue = await channel.declare_queue(
-            exclusive=True
-        )  # Временная очередь для ответа
-
-        # Отправляем запрос в очередь `user.rss.subscriptions`
-        await channel.default_exchange.publish(
-            Message(
-                body=json.dumps(
-                    {"user_id": user_id, "correlation_id": correlation_id}
-                ).encode(),
-                reply_to=reply_queue.name,
-                correlation_id=correlation_id,
-            ),
-            routing_key="user.rss.subscriptions",
-        )
-        try:
-            async with reply_queue.iterator() as queue_iter:
-                async for response_message in queue_iter:
-                    if response_message.correlation_id == correlation_id:
-                        response = json.loads(response_message.body.decode())
-                        if response["urls"]:
-                            await message.answer(
-                                GET_SUBSCRIPTIONS_TEXT(response["urls"])
-                            )
-                            logger.info(
-                                f"Отправлено сообщение с подписками пользователя {message.from_user.id}",
-                                correlation_id=correlation_id,
-                            )
-                        else:
-                            await message.answer(NO_SUBSCRIPTIONS_TEXT)
-                            logger.warning(
-                                f"У пользователя {message.from_user.id} нет подписок",
-                                correlation_id=correlation_id,
-                            )
-                        break
-        except asyncio.TimeoutError:
-            await message.answer(PROFILE_LOADING_ERROR_TEXT)
-            logger.error(
-                f"Ошибка при получении подписок пользователя {message.from_user.id}",
-                correlation_id=correlation_id,
-            )
-
+    subscriptions = await get_user_subscriptions(user_id, correlation_id)
+    if not subscriptions:
+        await message.answer(NO_SUBSCRIPTIONS_TEXT)
+        return
+    await message.answer(GET_SUBSCRIPTIONS_TEXT(subscriptions))
 
 @router.message(Command("unsubscribe"))
 async def unsubscribe_command(message: types.Message, state: FSMContext):

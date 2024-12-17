@@ -169,3 +169,27 @@ class UserQueueManager:
                 logger.error(
                     f"Неверный формат сообщения: {e}", correlation_id=correlation_id
                 )
+    
+    async def is_user_pro(self, user_id: int) -> bool:
+        async with async_session_factory() as session:
+            result = await session.execute(select(User).where(User.user_id == user_id))
+            return result.scalar_one_or_none() is not None
+    
+    async def handle_is_user_pro(self, message: IncomingMessage):
+        async with message.process():
+            try:
+                body = json.loads(message.body.decode())
+                user_id = body["user_id"]
+                correlation_id = message.correlation_id
+                is_pro = await self.is_user_pro(user_id)
+                response = {"status": "success", "is_pro": is_pro}
+                await self.channel.default_exchange.publish(
+                    Message(
+                        body=json.dumps(response).encode(),
+                        correlation_id=correlation_id,
+                    ),
+                    routing_key=message.reply_to,
+                )
+                logger.info(f"Отправлен ответ на запрос проверки статуса пользователя с ID {user_id}.", correlation_id=correlation_id)
+            except (KeyError, json.JSONDecodeError) as e:
+                logger.error(f"Неверный формат запроса: {e}", correlation_id=correlation_id)
