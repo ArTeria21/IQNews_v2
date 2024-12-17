@@ -32,7 +32,7 @@ class Ranker:
         self.llm = ChatTogether(
             api_key=TOGETHER_AI_KEY,
             model="Qwen/Qwen2.5-7B-Instruct-Turbo",
-            temperature=0.1,
+            temperature=0.2,
             max_tokens=300,
         )
         self.parser = JsonOutputParser(pydantic_object=Evaluation)
@@ -49,19 +49,19 @@ class Ranker:
             user = await session.get(User, user_id)
             return user.preferences
 
-    async def user_keywords(self, user_id: int) -> list[str]:
+    async def user_antipathy(self, user_id: int) -> list[str]:
         async with async_session_factory() as session:
             user = await session.get(User, user_id)
-            return user.keywords
+            return user.antipathy
 
     async def rank_post(
-        self, title: str, preferences: str, keywords: str, content: str
+        self, title: str, preferences: str, antipathy: str, content: str
     ) -> Evaluation:
         return await self.chain.ainvoke(
             {
                 "title": title,
                 "preferences": preferences,
-                "keywords": keywords,
+                "antipathy": antipathy,
                 "content": content,
                 "format_instructions": self.parser.get_format_instructions(),
             }
@@ -93,9 +93,9 @@ class Ranker:
             # Гарантируем, что не превысим лимит запросов
             async with self.limiter:
                 preferences = await self.user_preferences(int(user_id))
-                keywords = await self.user_keywords(int(user_id))
+                antipathy = await self.user_antipathy(int(user_id))
                 rank = await self.rank_post(
-                    data["post_title"], preferences, keywords, data["post_content"]
+                    data["post_title"], preferences, antipathy, data["post_content"]
                 )
                 logger.info(
                     f"Пост '{data['post_title']}' оценён рейтингом {rank['rank']}%",

@@ -17,7 +17,7 @@ from services.tg_bot.texts import (
     FEED_SUBSCRIBED_TEXT,
     INACTIVE_FEED_TEXT,
     INVALID_FEED_URL_TEXT,
-    KEYWORDS_SAVED_TEXT,
+    ANTYPATHY_SAVED_TEXT,
     PREFERENCES_SAVED_TEXT,
     UNSUBSCRIBE_FEED_SUCCESS_TEXT,
 )
@@ -84,35 +84,35 @@ async def edit_preferences(message: types.Message, state: FSMContext):
     )
 
 
-@router.message(EditProfile.keywords)
-async def edit_keywords(message: types.Message, state: FSMContext):
+@router.message(EditProfile.antipathy)
+async def edit_antipathy(message: types.Message, state: FSMContext):
     state_data = await state.get_data()
     correlation_id = state_data.get("correlation_id")
     """Обрабатывает текстовые сообщения, которые пользователь отправляет в ответном сообщении"""
-    keywords = message.text
+    antipathy = message.text
     connection = await get_rabbit_connection()
     logger.info(
-        f"Бот получил обновление ключевых слов пользователя {message.from_user.id}",
+        f"Бот получил обновление антипатий пользователя {message.from_user.id}",
         correlation_id=correlation_id,
     )
     async with connection.channel() as channel:
-        await channel.declare_queue("user.keywords.update", durable=True)
+        await channel.declare_queue("user.antipathy.update", durable=True)
         await channel.default_exchange.publish(
             aio_pika.Message(
                 body=json.dumps(
                     {
                         "user_id": message.from_user.id,
-                        "keywords": keywords,
+                        "antipathy": antipathy,
                         "correlation_id": correlation_id,
                     }
                 ).encode()
             ),
-            routing_key="user.keywords.update",
+            routing_key="user.antipathy.update",
         )
     await state.clear()
-    await message.answer(KEYWORDS_SAVED_TEXT)
+    await message.answer(ANTYPATHY_SAVED_TEXT)
     logger.info(
-        f"Изменения ключевых слов пользователя {message.from_user.id} сохранены",
+        f"Изменения антипатий пользователя {message.from_user.id} сохранены",
         correlation_id=correlation_id,
     )
 

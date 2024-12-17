@@ -7,7 +7,7 @@ def get_edit_profile_keyboard():
             [
                 InlineKeyboardButton(text="Интересы", callback_data="edit_preferences"),
                 InlineKeyboardButton(
-                    text="Ключевые слова", callback_data="edit_keywords"
+                    text="Антипатии", callback_data="edit_antipathy"
                 ),
             ]
         ]

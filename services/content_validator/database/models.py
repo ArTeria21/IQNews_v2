@@ -6,7 +6,7 @@ from datetime import datetime
 
 from sqlalchemy import Boolean, Column, DateTime, Index, Integer, String, Text
 
-from services.content_validator.config import Base
+from services.user_manager.config import Base
 
 
 class User(Base):
@@ -18,7 +18,7 @@ class User(Base):
     created_at = Column(DateTime, nullable=False, default=datetime.now)
     is_pro = Column(Boolean, nullable=False, default=False)
     preferences = Column(Text, nullable=True)
-    keywords = Column(Text, nullable=True)
+    antipathy = Column(Text, nullable=True)
 
     # Add indexes
     __table_args__ = (
@@ -34,6 +34,6 @@ class User(Base):
             "user_id": self.user_id,
             "username": self.username,
             "preferences": self.preferences,
-            "keywords": self.keywords,
+            "antipathy": self.antipathy,
             "is_pro": self.is_pro,
         }

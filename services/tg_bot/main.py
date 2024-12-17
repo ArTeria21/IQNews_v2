@@ -75,7 +75,7 @@ async def handle_ready_posts(message: aio_pika.IncomingMessage):
 
     # Prepare the news message
     translated_summary = translate_to_russian(data["news"])
-    news_text = GET_NEWS_TEXT(data["feed_url"], translated_summary, data["post_url"])
+    news_text = GET_NEWS_TEXT(data["feed_url"], translated_summary, data["post_url"], int(data["rank"]))
 
     # Enqueue the message for the user
     await enqueue_message(user_id, news_text, correlation_id)

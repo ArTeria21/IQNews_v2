@@ -151,18 +151,18 @@ class UserQueueManager:
                     f"Неверный формат сообщения: {e}", correlation_id=correlation_id
                 )
 
-    async def handle_update_keywords(self, message: IncomingMessage):
+    async def handle_update_antipathy(self, message: IncomingMessage):
         async with message.process():
             try:
                 body = json.loads(message.body.decode())
                 user_id = body["user_id"]
-                keywords = body["keywords"]
+                antipathy = body["antipathy"]
                 correlation_id = message.correlation_id
                 await self.user_db_manager.update_user(
-                    user_id=user_id, keywords=keywords, correlation_id=correlation_id
+                    user_id=user_id, antipathy=antipathy, correlation_id=correlation_id
                 )
                 logger.info(
-                    f"Обработано обновление ключевых слов пользователя с ID {user_id}.",
+                    f"Обработано обновление антипатий пользователя с ID {user_id}.",
                     correlation_id=correlation_id,
                 )
             except (KeyError, json.JSONDecodeError) as e:

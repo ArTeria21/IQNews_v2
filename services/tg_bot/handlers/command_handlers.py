@@ -160,7 +160,6 @@ async def profile_command(message: types.Message):
                 correlation_id=correlation_id,
             )
 
-
 @router.message(Command("help"))
 async def help_command(message: types.Message):
     """Обрабатывает команду /help и отправляет справку по командам"""

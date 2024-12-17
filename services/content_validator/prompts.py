@@ -1,20 +1,18 @@
 RANK_POSTS_PROMPT = """
-You rate the news with the following headline: "{title}"
-Here are the interests and requests of the reader to whom we can offer this news. Strictly rely on them when evaluating the text: "{preferences}"
+You are evaluating the news under the heading «{title}.» The reader has provided us with their preferences, which we should take into account when assessing the text: «{preferences}».
 
-Here is a list of keywords and topics that can occur in the text to make it interesting to the user. It is not necessary that all of them appear in the text, but they must set a vector for its evaluation: "{keywords}"
+Additionally, the user has specified a list of subjects they are not interested in or dislike. Be sure to check whether the article meets these criteria. In no case should you give a high rating for posts related to the user's aversions. Here is the list of negative subjects: «{antipathy}».
 
-Your task is to carefully study this text for compliance with the interests of the reader. If this news may seem interesting or useful to him, give him a high rating. If the news is not relevant or relevant at all, give a low rating. The score should be a number from 0 to 100, where 0 is not interesting at all, 100 is the maximum coincidence of interests.
+Your goal is to carefully analyze this text and ensure it aligns with the reader's interests. If they find the news interesting or valuable, award it a high rating. Conversely, if the article is irrelevant or uninteresting, assign a low rating. The rating should be a number between 0 and 100, with 0 indicating complete disinterest and 100 representing a perfect match.
 
-Be sure to return the response to me in the form of the following JSON:
-{format_instructions}
+Please respond in the format specified: {format_instructions}.
 
-Here is the text that you need to analyze and evaluate:
-```{content}```
+The text you need to evaluate is:
+```
+{content}
+```
 
-You should not give high marks to texts that do not correspond to the interests and needs of the reader!
-If you suspect that the post is an advertisement, then give it a low rating!
-Always answer in English!
+Avoid giving high marks to content that does not align with the reader's preferences and needs. If you suspect the post is advertising or spam, assign a lower rating. Always provide your response in English.
 """
 
 SYSTEM_PROMPT = """

@@ -5,7 +5,7 @@ from aiogram.fsm.context import FSMContext
 
 from logger_setup import generate_correlation_id, setup_logger
 from services.tg_bot.states.edit_profile import EditProfile
-from services.tg_bot.texts import EDIT_KEYWORDS_TEXT, EDIT_PREFERENCES_TEXT
+from services.tg_bot.texts import EDIT_ANTYPATHY_TEXT, EDIT_PREFERENCES_TEXT
 
 logger = setup_logger(__name__)
 
@@ -24,14 +24,14 @@ async def edit_preferences_callback(callback: types.CallbackQuery, state: FSMCon
     await state.update_data(correlation_id=correlation_id)
 
 
-@router.callback_query(F.data == "edit_keywords")
-async def edit_keywords_callback(callback: types.CallbackQuery, state: FSMContext):
-    """Обработка нажатия на кнопку Изменить ключевые слова"""
+@router.callback_query(F.data == "edit_antipathy")
+async def edit_antipathy_callback(callback: types.CallbackQuery, state: FSMContext):
+    """Обработка нажатия на кнопку Изменить антипатии"""
     correlation_id = generate_correlation_id()
     logger.info(
-        "Обработка нажатия на кнопку Изменить ключевые слова",
+        "Обработка нажатия на кнопку Изменить антипатии",
         correlation_id=correlation_id,
     )
-    await callback.message.answer(EDIT_KEYWORDS_TEXT)
-    await state.set_state(EditProfile.keywords)
+    await callback.message.answer(EDIT_ANTYPATHY_TEXT)
+    await state.set_state(EditProfile.antipathy)
     await state.update_data(correlation_id=correlation_id)
