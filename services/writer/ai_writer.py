@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from logger_setup import setup_logger
 from services.writer.config import TOGETHER_AI_KEY, get_rabbit_connection
 from services.writer.prompts import SYSTEM_PROMPT, WRITE_PROMPT
+from services.writer.metrics import AMOUNT_OF_SUMMARIES, SUMMARY_LENGTH, ERROR_COUNTER, TIME_OF_OPERATION
 
 logger = setup_logger(__name__)
 
@@ -39,14 +40,15 @@ class Writer:
 
     async def write_news(self, topic: str, preferences: str, content: str) -> News:
         async with self.limiter:
-            return await self.chain.ainvoke(
-                {
-                    "topic": topic,
-                    "preferences": preferences,
-                    "content": content,
-                    "format_instructions": self.parser.get_format_instructions(),
-                }
-            )
+            with TIME_OF_OPERATION.labels(request_type="write_news").time():
+                return await self.chain.ainvoke(
+                    {
+                        "topic": topic,
+                        "preferences": preferences,
+                        "content": content,
+                        "format_instructions": self.parser.get_format_instructions(),
+                    }
+                )
 
     async def handle_new_posts(self, message: aio_pika.IncomingMessage):
         data = json.loads(message.body.decode())
@@ -57,12 +59,13 @@ class Writer:
         try:
             logger.info(
                 f"Генерация статьи для пользователя {data['user_id']}",
-                correlation_id=correlation_id,
+                correlation_id=correlation_id
             )
             news = await self.write_news(
                 data["post_title"], data["preferences"], data["post_content"]
             )
         except OutputParserException:
+            ERROR_COUNTER.labels(error_type="parser_error").inc()
             logger.error(
                 "Ошибка при парсинге ответа от LLM", correlation_id=correlation_id
             )
@@ -70,7 +73,10 @@ class Writer:
 
         try:
             content = news["content"]
+            AMOUNT_OF_SUMMARIES.inc()
+            SUMMARY_LENGTH.observe(len(content))
         except KeyError:
+            ERROR_COUNTER.labels(error_type="content_error").inc()
             logger.error(
                 "Ошибка при получении содержимого статьи", correlation_id=correlation_id
             )

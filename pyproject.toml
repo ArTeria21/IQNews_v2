@@ -94,6 +94,7 @@ wheel = "0.44.0"
 xmod = "1.8.1"
 yarl = "1.18.3"
 aioredis = "2.0.1"
+prometheus-client = "^0.21.1"
 
 
 [build-system]

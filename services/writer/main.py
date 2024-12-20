@@ -3,12 +3,16 @@ import asyncio
 from logger_setup import generate_correlation_id, setup_logger
 from services.writer.ai_writer import Writer
 from services.writer.config import get_rabbit_connection
+from services.writer.metrics import writer_registry
+
+from prometheus_client import start_http_server
 
 logger = setup_logger(__name__)
-
+MONITORING_PORT = 8802 # Порт для мониторинга
 
 async def main():
     correlation_id = generate_correlation_id()
+    start_http_server(MONITORING_PORT, registry=writer_registry)
     logger.info("Запуск сервиса генератора статей", correlation_id=correlation_id)
     # Установка соединения с RabbitMQ
     connection = await get_rabbit_connection()

@@ -50,6 +50,16 @@ services:
       start_period: 10s
     networks:
       - backend
+  
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    restart: always
+    networks:
+      - backend
 
   tg_bot:
     build: .
@@ -72,6 +82,8 @@ services:
     volumes:
       - .:/app
     restart: always
+    ports:
+      - "8802:8802"
     depends_on:
       postgres:
         condition: service_healthy
@@ -86,6 +98,8 @@ services:
     volumes:
       - .:/app
     restart: always
+    ports:
+      - "8801:8801"
     depends_on:
       postgres:
         condition: service_healthy
@@ -100,6 +114,8 @@ services:
     volumes:
       - .:/app
     restart: always
+    ports:
+      - "8804:8804"
     depends_on:
       postgres:
         condition: service_healthy
@@ -114,6 +130,8 @@ services:
     volumes:
       - .:/app
     restart: always
+    ports:
+      - "8803:8803"
     depends_on:
       postgres:
         condition: service_healthy
