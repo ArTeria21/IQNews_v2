@@ -8,6 +8,8 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
+RELEVANCE_THRESHOLD = os.getenv("RELEVANCE_THRESHOLD", default=60)
+
 # Конфигурация базы данных
 POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")

@@ -13,6 +13,7 @@ from services.content_validator.config import (
     TOGETHER_AI_KEY,
     async_session_factory,
     get_rabbit_connection,
+    RELEVANCE_THRESHOLD,
 )
 from services.content_validator.database.models import User
 from services.content_validator.prompts import RANK_POSTS_PROMPT, SYSTEM_PROMPT
@@ -101,7 +102,7 @@ class Ranker:
                     f"Пост '{data['post_title']}' оценён рейтингом {rank['rank']}%",
                     correlation_id=correlation_id,
                 )
-                if rank["rank"] > 65:
+                if rank["rank"] > RELEVANCE_THRESHOLD:
                     connection = await get_rabbit_connection()
                     channel = await connection.channel()
                     queue = await channel.declare_queue("rss.relevant_posts")

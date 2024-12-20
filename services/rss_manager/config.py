@@ -8,6 +8,8 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 load_dotenv()
 
+MINUTES_BETWEEN_RSS_CHECKS = os.getenv("MINUTES_BETWEEN_RSS_CHECKS", default=3)
+
 # Конфигурация базы данных
 POSTGRES_USER = os.getenv("POSTGRES_USER")
 POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD")

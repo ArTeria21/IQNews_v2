@@ -1,7 +1,7 @@
 import asyncio
 
 from logger_setup import generate_correlation_id, setup_logger
-from services.rss_manager.config import get_rabbit_connection, init_db
+from services.rss_manager.config import get_rabbit_connection, init_db, MINUTES_BETWEEN_RSS_CHECKS
 from services.rss_manager.managers import RssFeedManager
 from services.rss_manager.rss_listener import RSSListener
 
@@ -14,7 +14,7 @@ async def run_listener(listener: RSSListener):
     while True:
         await listener.check_feeds()
         logger.info("Проверка RSS-каналов", correlation_id=correlation_id)
-        await asyncio.sleep(60 * 3)
+        await asyncio.sleep(60 * MINUTES_BETWEEN_RSS_CHECKS)
 
 
 async def main():
