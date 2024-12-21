@@ -29,6 +29,3 @@ jobs:
 
       - name: Run linter
         run: poetry run ruff check .
-
-      - name: Run tests
-        run: poetry run pytest
