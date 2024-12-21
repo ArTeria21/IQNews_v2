@@ -14,6 +14,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install poetry
           pip install ruff
+          pip install pytest
       - name: Install libraries
         run: poetry install
       - name: Run ruff
