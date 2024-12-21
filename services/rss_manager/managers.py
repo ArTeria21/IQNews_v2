@@ -8,8 +8,11 @@ from sqlalchemy.future import select
 from logger_setup import setup_logger
 from services.rss_manager.config import async_session_factory, get_rabbit_connection
 from services.rss_manager.database.models import RssFeed, Subscription
-from services.rss_manager.metrics import AMOUNT_OF_ADDED_RSS_FEEDS, TIME_OF_OPERATION, ERROR_COUNTER
-
+from services.rss_manager.metrics import (
+    AMOUNT_OF_ADDED_RSS_FEEDS,
+    ERROR_COUNTER,
+    TIME_OF_OPERATION,
+)
 
 logger = setup_logger(__name__)
 
@@ -78,7 +81,7 @@ class RssFeedManager:
                 feed = await self.add_feed(feed_url, correlation_id)
                 await self.add_subscription(data["user_id"], feed.feed_id, correlation_id)
                 await message.ack()
-            except Exception as e:
+            except Exception:
                 ERROR_COUNTER.labels(error_type="handle_add_message").inc()
                 raise
 
@@ -120,7 +123,7 @@ class RssFeedManager:
                     correlation_id=correlation_id,
                 )
                 await message.ack()
-            except Exception as e:
+            except Exception:
                 ERROR_COUNTER.labels(error_type="handle_get_subscriptions").inc()
                 raise
 
@@ -206,6 +209,6 @@ class RssFeedManager:
                     correlation_id=correlation_id,
                 )
                 await message.ack()
-            except Exception as e:
+            except Exception:
                 ERROR_COUNTER.labels(error_type="handle_delete_message").inc()
                 raise

@@ -1,4 +1,4 @@
-from prometheus_client import Counter, Histogram, CollectorRegistry
+from prometheus_client import CollectorRegistry, Counter, Histogram
 
 rss_manager_registry = CollectorRegistry()
 

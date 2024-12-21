@@ -10,8 +10,13 @@ from pydantic import BaseModel, Field
 
 from logger_setup import setup_logger
 from services.writer.config import TOGETHER_AI_KEY, get_rabbit_connection
+from services.writer.metrics import (
+    AMOUNT_OF_SUMMARIES,
+    ERROR_COUNTER,
+    SUMMARY_LENGTH,
+    TIME_OF_OPERATION,
+)
 from services.writer.prompts import SYSTEM_PROMPT, WRITE_PROMPT
-from services.writer.metrics import AMOUNT_OF_SUMMARIES, SUMMARY_LENGTH, ERROR_COUNTER, TIME_OF_OPERATION
 
 logger = setup_logger(__name__)
 

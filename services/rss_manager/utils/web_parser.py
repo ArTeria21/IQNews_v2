@@ -49,9 +49,8 @@ async def fetch_article_text(url: str) -> str:
     try:
         html = await fetch_html_aiohttp(url)
         text = await extract_main_text(html)
-        if (
-            text and len(text.split()) > 50
-        ):  # Если текста достаточно много, считаем успехом
+        MIN_CONTENT_LENGTH = 50
+        if text and len(text.split()) > MIN_CONTENT_LENGTH:  # Если текста достаточно много, считаем успехом
             return text
     except Exception:
         # Если что-то пошло не так, переходим к playwright

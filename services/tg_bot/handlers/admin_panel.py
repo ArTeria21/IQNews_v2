@@ -2,15 +2,20 @@ import asyncio
 import json
 
 from aio_pika import Message
-from aiogram import Router, types, F
+from aiogram import F, Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 
 from logger_setup import generate_correlation_id, setup_logger
-from services.tg_bot.config import get_rabbit_connection, ADMIN_PASSWORD
+from services.tg_bot.config import ADMIN_PASSWORD, get_rabbit_connection
 from services.tg_bot.keyboards.admin_panel import get_admin_panel_keyboard
-from services.tg_bot.texts import ADMIN_PANEL_TEXT, ADMIN_PANEL_PASSWORD_TEXT, CORRECT_PASSWORD_TEXT, INCORRECT_PASSWORD_TEXT
 from services.tg_bot.states.administrator import Administrator
+from services.tg_bot.texts import (
+    ADMIN_PANEL_PASSWORD_TEXT,
+    ADMIN_PANEL_TEXT,
+    CORRECT_PASSWORD_TEXT,
+    INCORRECT_PASSWORD_TEXT,
+)
 
 logger = setup_logger(__name__)
 
@@ -79,7 +84,7 @@ async def set_as_pro_callback(callback: types.CallbackQuery, state: FSMContext):
         return
     await callback.message.delete()
     await state.set_state(Administrator.set_as_pro)
-    await callback.message.answer(f"Введите ID пользователя, статус которого хотите установить в PRO")
+    await callback.message.answer("Введите ID пользователя, статус которого хотите установить в PRO")
 
 @router.callback_query(F.data == "set_as_free")
 async def set_as_free_callback(callback: types.CallbackQuery, state: FSMContext):
@@ -90,7 +95,7 @@ async def set_as_free_callback(callback: types.CallbackQuery, state: FSMContext)
         return
     await callback.message.delete()
     await state.set_state(Administrator.set_as_free)
-    await callback.message.answer(f"Введите ID пользователя, статус которого хотите установить в FREE")
+    await callback.message.answer("Введите ID пользователя, статус которого хотите установить в FREE")
 
 @router.message(Administrator.set_as_free)
 async def set_as_free_handler(message: types.Message, state: FSMContext):

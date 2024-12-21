@@ -13,11 +13,11 @@ from services.tg_bot.config import get_rabbit_connection
 from services.tg_bot.states.edit_profile import EditProfile
 from services.tg_bot.states.subscribe_rss import SubscribeRss
 from services.tg_bot.texts import (
+    ANTYPATHY_SAVED_TEXT,
     DONT_UNDERSTAND_TEXT,
     FEED_SUBSCRIBED_TEXT,
     INACTIVE_FEED_TEXT,
     INVALID_FEED_URL_TEXT,
-    ANTYPATHY_SAVED_TEXT,
     PREFERENCES_SAVED_TEXT,
     UNSUBSCRIBE_FEED_SUCCESS_TEXT,
 )

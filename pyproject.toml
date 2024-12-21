@@ -104,3 +104,27 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
 pythonpath = "."
+
+[tool.ruff]
+# Enable rules from various tools
+select = [
+    "E",    # pycodestyle errors
+    "F",    # Pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear (common pitfalls)
+    "S",    # flake8-bandit (security issues)
+    "PL",   # pylint
+]
+exclude = [
+    "tests",
+    "services/tg_bot/texts.py",
+    "*/prompts.py",
+    "*/config.py",
+]
+ignore = [
+    "E501", # Stupid line length
+    "PLR0913", # Important for logging
+    "S110",
+    "PLR1704",
+    "PLR0911",
+]

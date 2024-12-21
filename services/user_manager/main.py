@@ -1,11 +1,11 @@
 import asyncio
 
+from prometheus_client import start_http_server
+
 from logger_setup import generate_correlation_id, setup_logger
 from services.user_manager.config import get_rabbit_connection, init_db
 from services.user_manager.managers import UserQueueManager
 from services.user_manager.metrics import user_manager_registry
-
-from prometheus_client import start_http_server
 
 logger = setup_logger(__name__)
 MONITORING_PORT = 8801 # Порт для мониторинга

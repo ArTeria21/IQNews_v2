@@ -1,10 +1,11 @@
 import asyncio
+
 from prometheus_client import start_http_server
 
 from logger_setup import generate_correlation_id, setup_logger
 from services.content_validator.config import get_rabbit_connection, init_db
-from services.content_validator.ranker import Ranker
 from services.content_validator.metrics import content_validator_registry
+from services.content_validator.ranker import Ranker
 
 logger = setup_logger(__name__)
 MONITORING_PORT = 8804

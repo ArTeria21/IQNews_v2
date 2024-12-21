@@ -10,19 +10,20 @@ from pydantic import BaseModel, Field
 
 from logger_setup import setup_logger
 from services.content_validator.config import (
+    RELEVANCE_THRESHOLD,
     TOGETHER_AI_KEY,
     async_session_factory,
     get_rabbit_connection,
-    RELEVANCE_THRESHOLD,
 )
 from services.content_validator.database.models import User
-from services.content_validator.prompts import RANK_POSTS_PROMPT, SYSTEM_PROMPT
 from services.content_validator.metrics import (
     AMOUNT_OF_VALIDATED_POSTS,
-    TIME_OF_OPERATION,
-    MEAN_RATING,
     ERROR_COUNTER,
+    MEAN_RATING,
+    TIME_OF_OPERATION,
 )
+from services.content_validator.prompts import RANK_POSTS_PROMPT, SYSTEM_PROMPT
+
 logger = setup_logger(__name__)
 
 
@@ -117,7 +118,6 @@ class Ranker:
                         if rank["rank"] > int(RELEVANCE_THRESHOLD):
                             connection = await get_rabbit_connection()
                             channel = await connection.channel()
-                            queue = await channel.declare_queue("rss.relevant_posts")
                             await channel.default_exchange.publish(
                                 aio_pika.Message(
                                     body=json.dumps(
@@ -140,6 +140,6 @@ class Ranker:
                                 f"Пост '{data['post_title']}' отправлен в очередь релевантных постов для пользователя {user_id}",
                                 correlation_id=correlation_id,
                             )
-            except Exception as e:
+            except Exception:
                 ERROR_COUNTER.labels(error_type="handle_new_posts").inc()
                 raise

@@ -10,8 +10,8 @@ from aiogram.fsm.context import FSMContext
 
 from logger_setup import generate_correlation_id, setup_logger
 from services.tg_bot.config import (
-    get_rabbit_connection,
-)  # Функция для подключения к RabbitMQ
+    get_rabbit_connection,  # Функция для подключения к RabbitMQ
+)
 from services.tg_bot.keyboards.edit_profile import get_edit_profile_keyboard
 from services.tg_bot.states.subscribe_rss import SubscribeRss
 from services.tg_bot.texts import (
@@ -24,13 +24,14 @@ from services.tg_bot.texts import (
     PROFILE_TEXT,
     START_TEXT,
     SUBSCRIBE_FEED_TEXT,
-    UNSUBSCRIBE_FEED_TEXT,
     SUBSCRIPTIONS_LIMIT_TEXT,
+    UNSUBSCRIBE_FEED_TEXT,
 )
 
 logger = setup_logger(__name__)
 
 router = Router()
+AMOUNT_OF_FREE_SUBSCRIPTIONS = 3
 
 async def get_user_subscriptions(user_id: int, correlation_id: str) -> list[str]:
     """Получает список подписок пользователя из RabbitMQ"""
@@ -150,15 +151,14 @@ async def profile_command(message: types.Message):
             f"Отправлено сообщение с профилем пользователя {message.from_user.id}",
             correlation_id=correlation_id,
         )
+    elif response.get("message") == "timeout":
+        await message.answer(PROFILE_LOADING_ERROR_TEXT)
     else:
-        if response.get("message") == "timeout":
-            await message.answer(PROFILE_LOADING_ERROR_TEXT)
-        else:
-            await message.answer(PROFILE_NOT_FOUND_TEXT)
-            logger.warning(
-                f"Профиль пользователя {message.from_user.id} не найден",
-                correlation_id=correlation_id,
-            )
+        await message.answer(PROFILE_NOT_FOUND_TEXT)
+        logger.warning(
+            f"Профиль пользователя {message.from_user.id} не найден",
+            correlation_id=correlation_id,
+        )
 
 @router.message(Command("help"))
 async def help_command(message: types.Message):
@@ -191,7 +191,7 @@ async def subscribe_feed_command(message: types.Message, state: FSMContext):
     user_profile = await get_user_profile(message.from_user.id, correlation_id)
     is_pro = bool(user_profile['data']['is_pro'])
     current_subscriptions = await get_user_subscriptions(message.from_user.id, correlation_id)
-    if not is_pro and len(current_subscriptions) >= 3:
+    if not is_pro and len(current_subscriptions) >= AMOUNT_OF_FREE_SUBSCRIPTIONS:
         await message.answer(SUBSCRIPTIONS_LIMIT_TEXT)
         return
     await message.answer(SUBSCRIBE_FEED_TEXT)

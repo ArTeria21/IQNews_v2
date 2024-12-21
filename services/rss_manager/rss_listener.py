@@ -10,8 +10,12 @@ from sqlalchemy import select
 from logger_setup import generate_correlation_id, setup_logger
 from services.rss_manager.config import async_session_factory, get_rabbit_connection
 from services.rss_manager.database.models import RssFeed, RssPost, Subscription
+from services.rss_manager.metrics import (
+    AMOUNT_OF_POSTS,
+    ERROR_COUNTER,
+    TIME_OF_OPERATION,
+)
 from services.rss_manager.utils.web_parser import fetch_article_text
-from services.rss_manager.metrics import AMOUNT_OF_POSTS, TIME_OF_OPERATION, ERROR_COUNTER
 
 logger = setup_logger(__name__)
 
@@ -111,8 +115,8 @@ class RSSListener:
                     title = entry.title if hasattr(entry, "title") else "No Title"
                     link = entry.link if hasattr(entry, "link") else ""
                     content = entry.summary if hasattr(entry, "summary") else ""
-
-                    if len(content.split()) < 150:
+                    MIN_CONTENT_LENGTH = 150
+                    if len(content.split()) < MIN_CONTENT_LENGTH:
                         content = await fetch_article_text(link)
                         if not content:
                             ERROR_COUNTER.labels(error_type="fetch_article_error").inc()

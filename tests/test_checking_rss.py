@@ -1,6 +1,9 @@
-import pytest
 import asyncio
-from services.tg_bot.utils.check_rss_link import is_valid_rss_feed, is_feed_active
+
+import pytest
+
+from services.tg_bot.utils.check_rss_link import (is_feed_active,
+                                                  is_valid_rss_feed)
 
 # Тестовые данные
 test_cases_is_valid_rss_feed = [

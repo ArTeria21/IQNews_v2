@@ -1,4 +1,5 @@
 import pytest
+
 from services.tg_bot.utils.translator import translate_to_russian
 
 test_cases_translate_to_russian = [

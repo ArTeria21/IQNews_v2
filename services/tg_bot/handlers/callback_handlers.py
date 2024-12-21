@@ -4,9 +4,13 @@ from aiogram import F, Router, types
 from aiogram.fsm.context import FSMContext
 
 from logger_setup import generate_correlation_id, setup_logger
-from services.tg_bot.states.edit_profile import EditProfile
-from services.tg_bot.texts import EDIT_ANTYPATHY_TEXT, EDIT_PREFERENCES_TEXT, HOW_TO_BECOME_PRO_TEXT
 from services.tg_bot.config import ADMIN_USERNAME
+from services.tg_bot.states.edit_profile import EditProfile
+from services.tg_bot.texts import (
+    EDIT_ANTYPATHY_TEXT,
+    EDIT_PREFERENCES_TEXT,
+    HOW_TO_BECOME_PRO_TEXT,
+)
 
 logger = setup_logger(__name__)
 

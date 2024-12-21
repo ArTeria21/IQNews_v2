@@ -1,11 +1,16 @@
 import asyncio
+
 from prometheus_client import start_http_server
 
 from logger_setup import generate_correlation_id, setup_logger
-from services.rss_manager.config import get_rabbit_connection, init_db, MINUTES_BETWEEN_RSS_CHECKS
+from services.rss_manager.config import (
+    MINUTES_BETWEEN_RSS_CHECKS,
+    get_rabbit_connection,
+    init_db,
+)
 from services.rss_manager.managers import RssFeedManager
-from services.rss_manager.rss_listener import RSSListener
 from services.rss_manager.metrics import rss_manager_registry
+from services.rss_manager.rss_listener import RSSListener
 
 logger = setup_logger(__name__)
 MONITORING_PORT = 8803 # Порт для мониторинга

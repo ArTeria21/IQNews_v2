@@ -8,7 +8,12 @@ from sqlalchemy.future import select
 from logger_setup import setup_logger
 from services.user_manager.config import async_session_factory
 from services.user_manager.database.models import User
-from services.user_manager.metrics import REQUEST_COUNTER, TIME_OF_OPERATION, ERROR_COUNTER, USER_CREATED_COUNTER
+from services.user_manager.metrics import (
+    ERROR_COUNTER,
+    REQUEST_COUNTER,
+    TIME_OF_OPERATION,
+    USER_CREATED_COUNTER,
+)
 
 logger = setup_logger(__name__)
 
