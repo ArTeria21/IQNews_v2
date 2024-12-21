@@ -95,8 +95,12 @@ xmod = "1.8.1"
 yarl = "1.18.3"
 aioredis = "2.0.1"
 prometheus-client = "^0.21.1"
+aioresponses = "^0.7.7"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = "."
