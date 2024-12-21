@@ -100,7 +100,7 @@ class UserQueueManager:
                 REQUEST_COUNTER.labels(request_type="create_user").inc()
                 try:
                     body = json.loads(message.body.decode())
-                    correlation_id = message.correlation_id
+                    correlation_id = message["correlation_id"]
                     user_id = body["user_id"]
                     username = body["username"]
                     await self.user_db_manager.create_user(

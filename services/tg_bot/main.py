@@ -24,6 +24,7 @@ from services.tg_bot.handlers import (
     admin_panel_router,
     callback_router,
     command_router,
+    information_router,
     text_router,
 )
 from services.tg_bot.texts import GET_NEWS_TEXT
@@ -142,6 +143,7 @@ async def on_startup() -> aio_pika.Connection:
     dp.include_router(text_router)
     dp.include_router(callback_router)
     dp.include_router(admin_panel_router)
+    dp.include_router(information_router)
 
     # Setup webhook if enabled
     if USE_WEBHOOK:

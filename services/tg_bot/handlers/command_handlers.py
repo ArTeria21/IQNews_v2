@@ -7,6 +7,7 @@ from aio_pika import Message
 from aiogram import Router, types
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
+from aiogram.types import FSInputFile
 
 from logger_setup import generate_correlation_id, setup_logger
 from services.tg_bot.config import (
@@ -100,7 +101,8 @@ async def start_command(message: types.Message):
     """Обрабатывает команду /start и отправляет приветственное сообщение
     и сообщение в очередь для создания пользователя в БД
     """
-    await message.answer(START_TEXT)
+    photo = FSInputFile(path="static/xy_photo.jpg")
+    await message.answer_photo(photo, caption=START_TEXT)
     correlation_id = generate_correlation_id()
     logger.info(
         f"Обработка команды /start от пользователя {message.from_user.id}",
