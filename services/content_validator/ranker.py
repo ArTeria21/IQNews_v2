@@ -92,10 +92,10 @@ class Ranker:
                 if published_at.tzinfo is None:
                     published_at = published_at.replace(tzinfo=timezone.utc)
                 
-                # Проверяем, что пост не старше 3 часов
-                if (current_time - published_at) > timedelta(hours=3):
+                # Проверяем, что пост вышел в этот день
+                if published_at.date() != current_time.date():
                     logger.info(
-                        f"Пост '{data['post_title']}' не релевантен, так как он был опубликован более 3 часов назад",
+                        f"Пост '{data['post_title']}' не релевантен, так как он был опубликован в другой день",
                         correlation_id=correlation_id,
                     )
                     return
