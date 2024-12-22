@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 
 import aio_pika
 from aiolimiter import AsyncLimiter
