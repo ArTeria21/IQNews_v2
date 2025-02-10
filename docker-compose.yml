@@ -75,7 +75,7 @@ services:
         condition: service_healthy
     networks:
       - backend
-    command: ["python", "-m", "services.tg_bot.main"]
+    command: ["uv", "run", "-m", "services.tg_bot.main"]
 
   rss_manager:
     build: .
@@ -91,7 +91,7 @@ services:
         condition: service_healthy
     networks:
       - backend
-    command: ["python", "-m", "services.rss_manager.main"]
+    command: ["uv", "run", "-m", "services.rss_manager.main"]
 
   user_manager:
     build: .
@@ -107,7 +107,7 @@ services:
         condition: service_healthy
     networks:
       - backend
-    command: ["python", "-m", "services.user_manager.main"]
+    command: ["uv", "run", "-m", "services.user_manager.main"]
 
   content_validator:
     build: .
@@ -123,7 +123,7 @@ services:
         condition: service_healthy
     networks:
       - backend
-    command: ["python", "-m", "services.content_validator.main"]
+    command: ["uv", "run", "-m", "services.content_validator.main"]
 
   writer:
     build: .
@@ -139,7 +139,7 @@ services:
         condition: service_healthy
     networks:
       - backend
-    command: ["python", "-m", "services.writer.main"]
+    command: ["uv", "run", "-m", "services.writer.main"]
 
 networks:
   backend:

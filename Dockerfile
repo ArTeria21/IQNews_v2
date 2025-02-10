@@ -4,9 +4,8 @@ FROM python:3.12-slim
 # Устанавливаем необходимые системные зависимости
 RUN apt-get update && apt-get install -y libpq-dev gcc curl && rm -rf /var/lib/apt/lists/*
 
-# Устанавливаем Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 - && \
-    ln -s /root/.local/bin/poetry /usr/local/bin/poetry
+# Устанавливаем UV
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Устанавливаем рабочую директорию
 WORKDIR /app
@@ -15,11 +14,11 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
-# Копируем только файлы Poetry для установки зависимостей
-COPY pyproject.toml poetry.lock ./
+# Копируем только файлы UV для установки зависимостей
+COPY .python-version pyproject.toml uv.lock ./
 
 # Устанавливаем зависимости без запуска виртуального окружения
-RUN poetry config virtualenvs.create false && poetry install --no-root --no-interaction --no-ansi
+RUN uv sync
 
 # Копируем остальные файлы проекта
 COPY . .
