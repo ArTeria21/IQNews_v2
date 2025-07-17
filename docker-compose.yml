@@ -144,3 +144,37 @@ services:
 networks:
   backend:
     driver: bridge
+
+  loki:
+    image: grafana/loki:2.9.5
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - backend
+
+  promtail:
+    image: grafana/promtail:2.9.5
+    volumes:
+      - ./logs:/var/log/iqnews
+      - ./promtail-config.yml:/etc/promtail/promtail-config.yml
+    command: -config.file=/etc/promtail/promtail-config.yml
+    depends_on:
+      - loki
+    networks:
+      - backend
+
+  grafana:
+    image: grafana/grafana:10.2.2
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - loki
+      - prometheus
+    networks:
+      - backend
+
+volumes:
+  grafana_data:
