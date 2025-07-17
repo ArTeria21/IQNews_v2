@@ -3,5 +3,6 @@
 .pycache
 __pycache__
 *.log
+logs/
 .ruff_cache
 .pytest_cache
